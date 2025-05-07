@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+option go_package = "internal/pb";
+option java_package = "com.centraluniversity.booking";
+option java_multiple_files = true;
+
+enum Role {
+    ADMIN = 0;
+    USER = 1;
+}
+
+message GetUserRequest {
+    string email = 1;
+}
+
+message User {
+    uint32 id = 1;
+    string email = 2;
+    string first_name = 3;
+    string second_name = 4;
+    optional string mid_name = 5;
+    string pswd = 6;
+}
+
+message UserId {
+    uint32 id = 1;
+}
+
+message Empty {}
+
+service Authentication {
+    rpc GetUserByEmail (GetUserRequest) returns (User);
+    rpc CreateUser (User) returns (UserId);
+    rpc UpdateUser (User) returns (UserId);
+    rpc DeleteUser (UserId) returns (Empty);
+}
