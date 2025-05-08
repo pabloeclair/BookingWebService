@@ -4,6 +4,8 @@ import (
 	"context"
 	"cu_coworking_book/go/internal/db"
 	"cu_coworking_book/go/internal/pb"
+	"database/sql"
+	"errors"
 	"sync"
 
 	"golang.org/x/crypto/bcrypt"
@@ -38,4 +40,16 @@ func (s *AuthServer) CreateUser(ctx context.Context, req *pb.User) (*pb.UserId, 
 	s.mu.Unlock()
 
 	return &pb.UserId{Id: id}, nil
+}
+
+func (s *AuthServer) GetUserByEmail(ctx context.Context, req *pb.GetUserRequest) (*pb.User, error) {
+
+	email := req.GetEmail()
+	user, err := db.GetUserByEmail(email)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, status.Errorf(codes.InvalidArgument, "get user by email error: user with email %s does not exist", email)
+		}
+	}
+	return user, nil
 }
