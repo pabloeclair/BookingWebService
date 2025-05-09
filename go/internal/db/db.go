@@ -80,10 +80,33 @@ func CreateTable() error {
 
 	_, err = db.ExecContext(ctx, query)
 	if err != nil {
-		return fmt.Errorf("creating table: sql error: %w", err)
+		return fmt.Errorf("creating table: create error: %w", err)
 	}
 
 	log.Println("Created users table")
+	return nil
+}
+
+func DeleteTable() error {
+
+	db, err := sqlx.Connect("pgx", os.Getenv("DSN"))
+	if err != nil {
+		return fmt.Errorf("deleting table: connection to db: %w: %v", ErrConDB, err)
+	}
+	defer db.Close()
+
+	timeout, err := getSqlTimeout()
+	if err != nil {
+		return fmt.Errorf("deleting table: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	_, err = db.ExecContext(ctx, `DROP TABLE IF EXISTS users;`)
+	if err != nil {
+		return fmt.Errorf("deleting table: drop error: %w", err)
+	}
 	return nil
 }
 
@@ -92,7 +115,7 @@ func CreateUser(user User) (SignUpResponse, error) {
 	var res SignUpResponse
 	db, err := sqlx.Connect("pgx", os.Getenv("DSN"))
 	if err != nil {
-		return res, fmt.Errorf("creating user: connect to db: %w", err)
+		return res, fmt.Errorf("creating user: connection to db: %w", err)
 	}
 	defer db.Close()
 
@@ -136,7 +159,7 @@ func GetUserByEmail(email string) (LoginUserData, error) {
 	var out LoginUserData
 	db, err := sqlx.Connect("pgx", os.Getenv("DSN"))
 	if err != nil {
-		return out, fmt.Errorf("getting user by email: connect to db: %w", err)
+		return out, fmt.Errorf("getting user by email: connection to db: %w", err)
 	}
 	defer db.Close()
 
