@@ -25,3 +25,5 @@ test-go:
     - docker-compose up -d bd
     - sleep 20
     - go test -v ./...
+  dependencies:
+    - go-build
