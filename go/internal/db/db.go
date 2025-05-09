@@ -33,6 +33,7 @@ type SignUpResponse struct {
 }
 
 type LoginUserData struct {
+	ID       uint32 `db:"email"`
 	Email    string `db:"email"`
 	Password string `db:"password"`
 }
@@ -170,9 +171,42 @@ func GetUserByEmail(email string) (LoginUserData, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	query := `SELECT email, password FROM users WHERE email = $1;`
+	query := `SELECT id, email, password FROM users WHERE email = $1;`
 	if err := db.GetContext(ctx, &out, query, email); err != nil {
 		return out, fmt.Errorf("getting user by email: select error: %w", err)
 	}
 	return out, nil
+}
+
+func UpdateUser(oldEmail string, user User) error {
+
+	res, err := GetUserByEmail(oldEmail)
+	if err != nil {
+		return fmt.Errorf("updating user: %w", err)
+	}
+	user.ID = res.ID
+
+	db, err := sqlx.Connect("pgx", os.Getenv("DSN"))
+	if err != nil {
+		return fmt.Errorf("getting user by email: connection to db: %w", err)
+	}
+	defer db.Close()
+
+	timeout, err := getSqlTimeout()
+	if err != nil {
+		return fmt.Errorf("getting user by email: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	query := `UPDATE users 
+		SET email = :email, first_name := first_name, second_name := second_name, 
+		patronymic := patronymic, password := password WHERE id := id`
+
+	if _, err := db.NamedExecContext(ctx, query, &user); err != nil {
+		return fmt.Errorf("updating user: update error: %w", err)
+	}
+
+	return nil
 }

@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"errors"
+	"strings"
 	"sync"
 
 	"golang.org/x/crypto/bcrypt"
@@ -66,4 +67,31 @@ func (s *AuthServer) LogInUser(ctx context.Context, req *pb.EmailPassword) (*pb.
 	} else {
 		return nil, status.Error(codes.InvalidArgument, "log in error: invalid password")
 	}
+}
+
+func (s *AuthServer) UpdateUser(ctx context.Context, req *pb.UpdateRequest) (*pb.AuthHeader, error) {
+
+	user := db.User{
+		Email:      req.GetEmail(),
+		FirstName:  req.GetFirstName(),
+		SecondName: req.GetSecondName(),
+		Patronymic: req.GetPatronymic(),
+		Password:   req.GetPassword(),
+	}
+
+	emailPassword, err := base64.StdEncoding.DecodeString(req.GetAuthHeader())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "update user error: invalid auth header")
+	}
+	oldEmail := strings.Split(string(emailPassword), ":")
+
+	s.mu.Lock()
+	err = db.UpdateUser(oldEmail[0], user)
+	s.mu.Unlock()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "update user error: db error: %v", err)
+	}
+
+	newAuthHeader := base64.StdEncoding.EncodeToString([]byte(req.Email + ":" + req.Password))
+	return &pb.AuthHeader{AuthHeader: newAuthHeader}, nil
 }
