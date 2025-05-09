@@ -127,9 +127,9 @@ func CreateUser(user User) (SignUpResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	users := []User{}
+	var id uint32
 	role := pb.Role_USER
-	if err = db.SelectContext(ctx, &users, `SELECT * FROM users`); err != nil {
+	if err = db.GetContext(ctx, &id, `SELECT id FROM users LIMIT 1`); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			role = pb.Role_ADMIN
 		} else {
@@ -141,11 +141,10 @@ func CreateUser(user User) (SignUpResponse, error) {
 
 	queryInsert := `INSERT INTO users (email, first_name, second_name, patronymic, password, role) 
 		VALUES (:email, :first_name, :second_name, :patronymic, :password, :role);`
-	if _, err = db.ExecContext(ctx, queryInsert, &user); err != nil {
+	if _, err = db.NamedExecContext(ctx, queryInsert, &user); err != nil {
 		return res, fmt.Errorf("creating user: insert error: %w", err)
 	}
 
-	var id uint32
 	if err := db.GetContext(ctx, &id, `SELECT id FROM users WHERE email = $1`, user.Email); err != nil {
 		return res, fmt.Errorf("creating user: get id error: %w", err)
 	}
