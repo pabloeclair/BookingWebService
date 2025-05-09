@@ -1,0 +1,27 @@
+stages:
+  - build
+  - test
+
+variables:
+  POSTGRES_USER: gitlab_admin
+  POSTGRES_PASSWORD: gitlab_password
+  POSTGRES_DB: gitlab_db
+  PGHOST: bd
+  SQL_TIMEOUT: 10
+
+services:
+  - docker:dind
+
+go-build:
+  stage: build
+  image: golang:1.23.9
+  script:
+    - go build -v ./go/cmd/auth/auth.go
+
+test-go:
+  stage: test
+  image: golang:1.23.9
+  script:
+    - docker-compose up -d bd
+    - sleep 20
+    - go test -v ./...
