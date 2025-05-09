@@ -6,7 +6,7 @@ variables:
   POSTGRES_USER: gitlab_admin
   POSTGRES_PASSWORD: gitlab_password
   POSTGRES_DB: gitlab_db
-  PGHOST: bd
+  PGHOST: db
   SQL_TIMEOUT: 10
 
 services:
