@@ -95,3 +95,29 @@ func (s *AuthServer) UpdateUser(ctx context.Context, req *pb.UpdateRequest) (*pb
 	newAuthHeader := base64.StdEncoding.EncodeToString([]byte(req.Email + ":" + req.Password))
 	return &pb.AuthHeader{AuthHeader: newAuthHeader}, nil
 }
+
+func (s *AuthServer) DeleteUser(ctx context.Context, req *pb.EmailPassword) (*pb.Empty, error) {
+
+	s.mu.RLock()
+	login, err := db.GetUserByEmail(req.Email)
+	s.mu.RUnlock()
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, status.Errorf(codes.NotFound, "delete user error: db error: %v", err)
+		} else {
+			return nil, status.Errorf(codes.Internal, "delete user error: db error: %v", err)
+		}
+	}
+
+	if login.Password != req.Password {
+		return nil, status.Error(codes.PermissionDenied, "delete user error: password doesn't match")
+	}
+
+	s.mu.Lock()
+	err = db.DeleteUser(req.Email)
+	s.mu.Unlock()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "delete user error: db error: %v", err)
+	}
+	return nil, nil
+}

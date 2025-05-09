@@ -210,3 +210,25 @@ func UpdateUser(oldEmail string, user User) error {
 
 	return nil
 }
+
+func DeleteUser(email string) error {
+
+	db, err := sqlx.Connect("pgx", os.Getenv("DSN"))
+	if err != nil {
+		return fmt.Errorf("deleting user: connection to db: %w", err)
+	}
+	defer db.Close()
+
+	timeout, err := getSqlTimeout()
+	if err != nil {
+		return fmt.Errorf("deleting user: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	if _, err := db.ExecContext(ctx, `DELETE FROM users WHERE email = $1`, email); err != nil {
+		return fmt.Errorf("deleting user: db error: %w", err)
+	}
+	return nil
+}
