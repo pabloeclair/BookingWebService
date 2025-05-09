@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"cu_coworking_book/go/internal/pb"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -17,11 +18,18 @@ import (
 var ErrConDB = errors.New("connection to the database failed")
 
 type User struct {
-	Email      string `db:"email"`
-	FirstName  string `db:"first_name"`
-	SecondName string `db:"second_name"`
-	MidName    string `db:"mid_name"`
-	Password   string `db:"password"`
+	ID             uint32  `db:"id"`
+	Email          string  `db:"email"`
+	FirstName      string  `db:"first_name"`
+	SecondName     string  `db:"second_name"`
+	Patronymic     string  `db:"patronymic"`
+	HashedPassword string  `db:"password"`
+	Role           pb.Role `db:"role"`
+}
+
+type SignUpResponse struct {
+	ID   uint32
+	Role pb.Role
 }
 
 func getSqlTimeout() (time.Duration, error) {
@@ -57,11 +65,12 @@ func CreateTable() error {
 
 	query := `CREATE TABLE IF NOT EXISTS users (
 		id SERIAL PRIMARY KEY,
-		email VARCHAR NOT NULL,
+		email VARCHAR UNIQUE NOT NULL,
 		first_name VARCHAR NOT NULL,
 		second_name VARCHAR NOT NULL,
-		mid_name VARCHAR,
-		password TEXT NOT NULL
+		patronymic VARCHAR,
+		password TEXT NOT NULL,
+		role VARCHAR NOT NULL
 	);`
 
 	_, err = db.ExecContext(ctx, query)
@@ -73,36 +82,48 @@ func CreateTable() error {
 	return nil
 }
 
-func CreateUser(user User) (uint32, error) {
+func CreateUser(user User) (SignUpResponse, error) {
 
+	var res SignUpResponse
 	db, err := sqlx.Connect("pgx", os.Getenv("DSN"))
 	if err != nil {
-		return 0, fmt.Errorf("create user error: connect to db: %w", err)
+		return res, fmt.Errorf("create user error: connect to db: %w", err)
 	}
 	defer db.Close()
 
 	timeout, err := getSqlTimeout()
 	if err != nil {
-		return 0, fmt.Errorf("create user error: %w", err)
+		return res, fmt.Errorf("create user error: %w", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	queryInsert := `INSERT INTO users (email, first_name, second_name, mid_name, password) 
-	VALUES (:email, :first_name, :second_name, :mid_name, :password);`
+	users := []User{}
+	role := pb.Role_USER
+	if err = db.SelectContext(ctx, &users, `SELECT * FROM users`); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			role = pb.Role_ADMIN
+		} else {
+			return res, fmt.Errorf("create user error: select error: %w", err)
+		}
+	}
+	user.Role = role
+	res.Role = role
 
-	_, err = db.NamedExecContext(ctx, queryInsert, user)
-	if err != nil {
-		return 0, fmt.Errorf("create user error: insert data: %w", err)
+	queryInsert := `INSERT INTO users (email, first_name, second_name, patronymic, password, role) 
+		VALUES (:email, :first_name, :second_name, :patronymic, :password, :role);`
+	if _, err = db.ExecContext(ctx, queryInsert, &user); err != nil {
+		return res, fmt.Errorf("create user error: insert error: %w", err)
 	}
 
-	queryGet := `SELECT id FROM USERS ORDER BY id DESC LIMIT 1`
 	var id uint32
-	if err = db.GetContext(ctx, &id, queryGet); err != nil {
-		return 0, fmt.Errorf("create user error: select id: %w", err)
+	if err := db.GetContext(ctx, &id, `SELECT id FROM users WHERE email = $1`, user.Email); err != nil {
+		return res, fmt.Errorf("create user error: get id error: %w", err)
 	}
-	return id, nil
+	res.ID = id
+
+	return res, nil
 }
 
 func GetUserByEmail(email string) (*pb.User, error) {
@@ -122,9 +143,30 @@ func GetUserByEmail(email string) (*pb.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	query := `SELECT * FROM users WHERE email=$1;`
-	if err := db.GetContext(ctx, user, query); err != nil {
+	query := `SELECT * FROM users WHERE email = $1;`
+	if err := db.GetContext(ctx, user, query, email); err != nil {
 		return nil, fmt.Errorf("get user by email error: %w", err)
 	}
 	return user, nil
+}
+
+func UpdateUser(*pb.User) error {
+
+	db, err := sqlx.Connect("pgx", os.Getenv("DSN"))
+	if err != nil {
+		return fmt.Errorf("get user by email error: connect to db: %w", err)
+	}
+	defer db.Close()
+
+	timeout, err := getSqlTimeout()
+	if err != nil {
+		return fmt.Errorf("get user by email error: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	query := `UPDATE users SET email := email, first_name := first_name, 
+		second_name := second_name, mid_name := mid_name WHERE id := id`
+
 }
