@@ -29,8 +29,7 @@ message EmailPassword {
 }
 
 message AuthHeader {
-    uint32 id = 1;
-    string auth_header = 2;
+    string auth_header = 1;
 }
 
 message UpdateRequest {
@@ -38,6 +37,8 @@ message UpdateRequest {
     string first_name = 2;
     string second_name = 3;
     optional string patronymic = 4;
+    string password = 5;
+    string auth_header = 6;
 }
 
 message Empty {}
