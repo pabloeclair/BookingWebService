@@ -4,8 +4,7 @@ import (
 	"context"
 	"cu_coworking_book/go/internal/db"
 	"cu_coworking_book/go/internal/pb"
-	"database/sql"
-	"errors"
+	"encoding/base64"
 	"sync"
 
 	"golang.org/x/crypto/bcrypt"
@@ -18,38 +17,34 @@ type AuthServer struct {
 	mu sync.RWMutex
 }
 
-func (s *AuthServer) CreateUser(ctx context.Context, req *pb.User) (*pb.UserId, error) {
+func (s *AuthServer) SignUpUser(ctx context.Context, req *pb.SignUpRequest) (*pb.SignUpResponse, error) {
 
-	hashPassword, err := bcrypt.GenerateFromPassword([]byte(req.GetPswd()), 12)
+	var result *pb.SignUpResponse
+
+	password, err := bcrypt.GenerateFromPassword([]byte(req.GetPassword()), 14)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "create user error: generate hash password: %v", err)
+		return nil, status.Errorf(codes.Internal, "sign up error: generate password hash: %v", err)
 	}
+
 	user := db.User{
-		Email:      req.GetEmail(),
-		FirstName:  req.GetFirstName(),
-		SecondName: req.GetSecondName(),
-		MidName:    req.GetMidName(),
-		Password:   string(hashPassword),
+		Email:          req.GetEmail(),
+		FirstName:      req.GetFirstName(),
+		SecondName:     req.GetSecondName(),
+		Patronymic:     req.GetPatronymic(),
+		HashedPassword: string(password),
 	}
 
 	s.mu.Lock()
-	id, err := db.CreateUser(user)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
+	res, err := db.CreateUser(user)
 	s.mu.Unlock()
-
-	return &pb.UserId{Id: id}, nil
-}
-
-func (s *AuthServer) GetUserByEmail(ctx context.Context, req *pb.GetUserRequest) (*pb.User, error) {
-
-	email := req.GetEmail()
-	user, err := db.GetUserByEmail(email)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, status.Errorf(codes.InvalidArgument, "get user by email error: user with email %s does not exist", email)
-		}
+		return nil, status.Errorf(codes.Internal, "sign up error: generate password hash: %v", err)
 	}
-	return user, nil
+	result.Id = res.ID
+	result.Role = res.Role
+
+	emailPassword := req.GetEmail() + ":" + req.GetPassword()
+	result.AuthHeader = base64.StdEncoding.EncodeToString([]byte(emailPassword))
+
+	return result, nil
 }
