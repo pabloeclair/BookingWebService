@@ -198,3 +198,29 @@ func TestUpdateUser(t *testing.T) {
 		}
 	})
 }
+
+func TestDeleteUser(t *testing.T) {
+
+	t.Run("DeleteFirstUser", func(t *testing.T) {
+		email := "test1@mail.ru"
+
+		err := db.DeleteUser(email)
+		if err != nil {
+			t.Fatalf("Expected error: err = nil; actual error: err = %v", err)
+		}
+
+		_, err = db.GetUserByEmail(email)
+		if !errors.Is(err, sql.ErrNoRows) {
+			t.Fatalf("Expected error when getting user: err = ErrNoRows; actual error: err = %v", err)
+		}
+	})
+
+	t.Run("DeleteInvalidUser", func(t *testing.T) {
+		email := "notexists@mail.ru"
+
+		err := db.DeleteUser(email)
+		if !errors.Is(err, sql.ErrNoRows) {
+			t.Fatalf("Expected error: err = ErrNoRows; actual error: err = %v", err)
+		}
+	})
+}
