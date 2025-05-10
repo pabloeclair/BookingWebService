@@ -79,6 +79,20 @@ func TestCreateUser(t *testing.T) {
 		}
 	})
 
+	t.Run("CreateInvalidUser", func(t *testing.T) {
+		user := db.User{
+			Email:    "test3@mail.ru",
+			Password: "invalidpassword",
+		}
+
+		expectedError := `creating user: insert error: ERROR: null value in column "email" violates not-null constraint (SQLSTATE 23502)`
+
+		_, err := db.CreateUser(user)
+		if err.Error() != expectedError {
+			t.Fatalf("Expected error: err = %s; actual error: err = %v", expectedError, err)
+		}
+	})
+
 }
 
 func TestGetUserByEmail(t *testing.T) {
