@@ -7,12 +7,15 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 )
 
 func TestCreateUser(t *testing.T) {
 
+	if err := godotenv.Load("../../../.env"); err != nil {
+		t.Fatal(err)
+	}
 	t.Run("CreateFirstUser", func(t *testing.T) {
 		user := db.User{
 			Email:      "test1@mail.ru",
@@ -21,6 +24,12 @@ func TestCreateUser(t *testing.T) {
 			Patronymic: "Майерс",
 			Password:   "ArtSoftwareTesting",
 		}
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 14)
+		if err != nil {
+			t.Fatalf("Internal error: bcrypt: %v", err)
+		}
+		user.Password = string(hashedPassword)
 
 		res, err := db.CreateUser(user)
 		if err != nil {
@@ -39,6 +48,12 @@ func TestCreateUser(t *testing.T) {
 			Password:   "RapidSoftwareTesting",
 		}
 
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 14)
+		if err != nil {
+			t.Fatalf("Internal error: bcrypt: %v", err)
+		}
+		user.Password = string(hashedPassword)
+
 		res, err := db.CreateUser(user)
 		if err != nil {
 			t.Fatalf("Expected error: err = nil; actual error: err = %v", err)
@@ -56,16 +71,12 @@ func TestCreateUser(t *testing.T) {
 			Password:   "RapidSoftwareTesting",
 		}
 
+		expectedError := `creating user: insert error: ERROR: duplicate key value violates unique constraint "users_email_key" (SQLSTATE 23505)`
+
 		_, err := db.CreateUser(user)
-		if err == nil {
-			t.Fatal(`Expected error: err = creating user: insert error: duplicate key value violates unique constraint "users_email_key"; actual error: err = nil"`)
+		if err.Error() != expectedError {
+			t.Fatalf(`Expected error: err = %s; actual error: err = %v`, expectedError, err)
 		}
-		if pgErr, ok := err.(*pgconn.PgError); ok {
-			if pgErr.Code != "23505" {
-				t.Fatalf(`Expected error: code = 23505, msg = duplicate key value violates unique constraint "users_email_key"; actual error: code = %s, msg = %s`, pgErr.Code, pgErr.Message)
-			}
-		}
-		t.Fatalf(`Expected error: err = creating user: insert error: duplicate key value violates unique constraint "users_email_key"; actual error: err = %v`, err)
 	})
 
 }
@@ -81,7 +92,7 @@ func TestGetUserByEmail(t *testing.T) {
 		}
 
 		err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte("ArtSoftwareTesting"))
-		if user.Email != "test1@mail.ru" || err != nil {
+		if user.ID != 1 || user.Email != "test1@mail.ru" || err != nil {
 			t.Fatalf("Expected result: email = %s, errComparePassword = nil; actual result: email = %s, errComparePassword = %v", email, user.Email, err)
 		}
 	})
@@ -95,7 +106,7 @@ func TestGetUserByEmail(t *testing.T) {
 		}
 
 		err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte("RapidSoftwareTesting"))
-		if user.Email != "test2@mail.ru" || err != nil {
+		if user.ID != 2 || user.Email != "test2@mail.ru" || err != nil {
 			t.Fatalf("Expected result: email = %s, errComparePassword = nil; actual result: email = %s, errComparePassword = %v", email, user.Email, err)
 		}
 	})
