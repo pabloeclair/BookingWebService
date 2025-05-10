@@ -85,7 +85,7 @@ func TestCreateUser(t *testing.T) {
 			Password: "invalidpassword",
 		}
 
-		expectedError := `creating user: insert error: ERROR: null value in column "email" violates not-null constraint (SQLSTATE 23502)`
+		expectedError := `creating user: insert error: ERROR: null value in column "first_name" violates not-null constraint (SQLSTATE 23502)`
 
 		_, err := db.CreateUser(user)
 		if err.Error() != expectedError {
@@ -133,5 +133,68 @@ func TestGetUserByEmail(t *testing.T) {
 			t.Fatalf("Expected error: err = ErrNoRows; actual error: err = %v", err)
 		}
 	})
+}
 
+func TestUpdateUser(t *testing.T) {
+
+	t.Run("UpdateFirstUser", func(t *testing.T) {
+		user := db.User{
+			Email:      "test1@mail.ru",
+			FirstName:  "Гленфорд",
+			SecondName: "Дж.",
+			Password:   "NewArtSoftwareTesting",
+		}
+
+		err := db.UpdateUser(user.Email, user)
+		if err != nil {
+			t.Fatalf("Expected error: err = nil; actual error: err = %v", err)
+		}
+
+		actualUser, err := db.GetUserByEmail(user.Email)
+		if err != nil {
+			t.Fatalf("Expected error when getting actual user: err = nil; actual error: err = %v", err)
+		}
+
+		if actualUser.Password != user.Password {
+			t.Fatalf("Expected result: password = NewArtSoftwareTesting; actual result: password = %s", actualUser.Password)
+		}
+
+	})
+
+	t.Run("FullUpdateSecondUser", func(t *testing.T) {
+		user := db.User{
+			Email:      "updatetest2@gmail.com",
+			FirstName:  "Святослав",
+			SecondName: "Куликов",
+			Patronymic: "Святославович",
+			Password:   "RelationalDatabasesInTheExamples",
+		}
+
+		err := db.UpdateUser("test2@mail.ru", user)
+		if err != nil {
+			t.Fatalf("Expected error: err = nil; actual error: err = %v", err)
+		}
+
+		actualUser, err := db.GetUserByEmail(user.Email)
+		if err != nil {
+			t.Fatalf("Expected error when getting actual user: err = nil; actual error: err = %v", err)
+		}
+
+		if actualUser.Password != user.Password {
+			t.Fatalf("Expected result: password = RelationalDatabasesInTheExamples; actual result: password = %s", actualUser.Password)
+		}
+	})
+
+	t.Run("InvalidUpdateSecondUser", func(t *testing.T) {
+		user := db.User{
+			Email:    "updatetest2@gmail.com",
+			Password: "RelationalDatabasesInTheExamples",
+		}
+
+		expectedError := `creating user: insert error: ERROR: null value in column "first_name" violates not-null constraint (SQLSTATE 23502)`
+		err := db.UpdateUser("updatetest2@gmail.com", user)
+		if err.Error() != expectedError {
+			t.Fatalf("Expected error: err = %s; actual error: err = %v", expectedError, err)
+		}
+	})
 }
