@@ -15,15 +15,18 @@ services:
 go-build:
   stage: build
   image: golang:1.23.9
+  tags:
+    - students-buildkit-medium
   script:
     - go build -v ./go/cmd/auth/auth.go
 
 test-go:
   stage: test
   image: golang:1.23.9
+  tags:
+    - students-buildkit-medium
   script:
     - docker-compose up -d bd
     - sleep 20
     - go test -v ./...
-  dependencies:
-    - go-build
+
