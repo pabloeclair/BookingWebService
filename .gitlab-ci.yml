@@ -8,6 +8,7 @@ variables:
   POSTGRES_DB: gitlab_db
   PGHOST: db
   SQL_TIMEOUT: 10
+  GOCACHE: /go/cache
 
 services:
   - docker:dind
@@ -23,6 +24,7 @@ go-build:
     - go mod download
     - go mod tidy
     - go generate ./...
+    - mkdir -p $GOCACHE
     - go build -o auth ./cmd/auth
   cache:
     paths:
@@ -40,9 +42,13 @@ test-go:
     - go mod download
     - go mod tidy
     - go generate ./...
+    - mkdir -p $GOCACHE
     - docker-compose up -d bd
     - sleep 20
     - go test -v ./...
   dependencies:
     - go-build
+  cache:
+    paths:
+      - /go/cache/
 
