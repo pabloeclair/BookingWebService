@@ -15,7 +15,7 @@ services:
 
 go-build:
   stage: build
-  image: golang:1.23.9
+  image: nametake/protoc-all:latest
   tags:
     - students-buildkit-medium
   before_script:
@@ -33,9 +33,9 @@ go-build:
       - /go/cache/
 
 
-test-go:
+go-test:
   stage: test
-  image: golang:1.23.9
+  image: nametake/protoc-all:latest
   tags:
     - students-buildkit-medium
   before_script:
@@ -44,6 +44,9 @@ test-go:
     - git fetch origin $BRANCH
     - git checkout $BRANCH
     - mkdir -p $GOCACHE
+    - go mod download
+    - go mod tidy
+    - go generate ./...
     - docker-compose up -d bd
     - sleep 20
     - go test -v ./...
