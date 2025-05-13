@@ -8,6 +8,7 @@ variables:
   POSTGRES_DB: gitlab_db
   PGHOST: db
   SQL_TIMEOUT: 10
+  GOCACHE: /go/cache
 
 services:
   - docker:dind
@@ -18,7 +19,7 @@ go-build:
   tags:
     - students-buildkit-medium
   script:
-    - mkdir -p /go/cache
+    - mkdir -p $GOCACHE
     - go build -v ./go/cmd/auth/auth.go
   cache:
     paths:
