@@ -19,6 +19,10 @@ go-build:
     - students-buildkit-medium
   script:
     - go build -v ./go/cmd/auth/auth.go
+  cache:
+    paths:
+      - .go_cache/
+
 
 test-go:
   stage: test
