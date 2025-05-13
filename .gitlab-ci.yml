@@ -18,6 +18,8 @@ go-build:
   image: golang:1.23.9
   tags:
     - students-buildkit-medium
+  before_script:
+    - apt-get update && apt-get install -y protobuf-compiler
   script:
     - git fetch origin $BRANCH
     - git checkout $BRANCH
@@ -36,12 +38,11 @@ test-go:
   image: golang:1.23.9
   tags:
     - students-buildkit-medium
+  before_script:
+    - apt-get update && apt-get install -y protobuf-compiler
   script:
     - git fetch origin $BRANCH
     - git checkout $BRANCH
-    - go mod download
-    - go mod tidy
-    - go generate ./...
     - mkdir -p $GOCACHE
     - docker-compose up -d bd
     - sleep 20
