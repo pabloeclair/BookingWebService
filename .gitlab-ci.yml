@@ -18,10 +18,11 @@ go-build:
   tags:
     - students-buildkit-medium
   script:
+    - mkdir -p /go/cache
     - go build -v ./go/cmd/auth/auth.go
   cache:
     paths:
-      - .go_cache/
+      - /go/cache/
 
 
 test-go:
