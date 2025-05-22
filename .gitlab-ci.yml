@@ -3,7 +3,7 @@ stages:
   - test
 
 variables:
-  GOCACHE: ./go/cache
+  GOCACHE: $CI_PROJECT_DIR/go/cache
 
 go-build:
   stage: build
@@ -19,5 +19,5 @@ go-build:
     - go build -o auth ./go/cmd/auth
   cache:
     paths:
-      - ./go/cache/
+      - go/cache
 
