@@ -10,15 +10,13 @@ go-build:
   image: golang:1.23.9
   tags:
     - students-buildkit-medium
-  before_script:
-    - apt-get update && apt-get install -y protobuf-compiler
   script:
     - git fetch origin $BRANCH
     - git checkout $BRANCH
     - go mod download
     - go mod tidy
     - mkdir -p $GOCACHE
-    - go build -o auth ./cmd/auth
+    - go build -o auth ./go/cmd/auth
   cache:
     paths:
       - /go/cache/
