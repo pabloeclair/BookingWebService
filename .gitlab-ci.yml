@@ -2,9 +2,6 @@ stages:
   - build
   - test
 
-variables:
-  GOCACHE: /go/cache
-
 go-build:
   stage: build
   image: golang:1.23.9
@@ -15,9 +12,5 @@ go-build:
     - git checkout $BRANCH
     - go mod download
     - go mod tidy
-    - mkdir -p $GOCACHE
     - go build -o auth ./go/cmd/auth
-  cache:
-    paths:
-      - /go/cache/
 
