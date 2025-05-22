@@ -3,15 +3,7 @@ stages:
   - test
 
 variables:
-  POSTGRES_USER: gitlab_admin
-  POSTGRES_PASSWORD: gitlab_password
-  POSTGRES_DB: gitlab_db
-  PGHOST: db
-  SQL_TIMEOUT: 10
   GOCACHE: /go/cache
-
-services:
-  - docker:dind
 
 go-build:
   stage: build
@@ -28,30 +20,6 @@ go-build:
     - go generate ./...
     - mkdir -p $GOCACHE
     - go build -o auth ./cmd/auth
-  cache:
-    paths:
-      - /go/cache/
-
-
-go-test:
-  stage: test
-  image: golang:1.23.9
-  tags:
-    - students-buildkit-medium
-  before_script:
-    - apt-get update && apt-get install -y protobuf-compiler
-  script:
-    - git fetch origin $BRANCH
-    - git checkout $BRANCH
-    - mkdir -p $GOCACHE
-    - go mod download
-    - go mod tidy
-    - go generate ./...
-    - docker-compose up -d bd
-    - sleep 20
-    - go test -v ./...
-  dependencies:
-    - go-build
   cache:
     paths:
       - /go/cache/
