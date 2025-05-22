@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 option go_package = "internal/pb";
-option java_package = "com.centraluniversity.booking";
+option java_package = "centraluniversity.app.booking";
 option java_multiple_files = true;
 
 enum Role {
