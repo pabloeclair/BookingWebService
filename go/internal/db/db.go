@@ -71,12 +71,12 @@ func CreateTable() error {
 
 	query := `CREATE TABLE IF NOT EXISTS users (
 		id SERIAL PRIMARY KEY,
-		email VARCHAR UNIQUE NOT NULL,
-		first_name VARCHAR NOT NULL,
-		second_name VARCHAR NOT NULL,
-		patronymic VARCHAR,
+		email VARCHAR(50) UNIQUE NOT NULL,
+		first_name VARCHAR(20) NOT NULL,
+		second_name VARCHAR(20) NOT NULL,
+		patronymic VARCHAR(20),
 		password TEXT NOT NULL,
-		role VARCHAR NOT NULL
+		role VARCHAR(10) NOT NULL
 	);`
 
 	_, err = db.ExecContext(ctx, query)
