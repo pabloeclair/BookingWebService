@@ -17,7 +17,4 @@ go-build:
     - go mod tidy
     - mkdir -p $GOCACHE
     - go build -o auth ./go/cmd/auth
-  cache:
-    paths:
-      - go/cache
 
