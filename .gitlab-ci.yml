@@ -17,7 +17,6 @@ go-build:
     - git checkout $BRANCH
     - go mod download
     - go mod tidy
-    - go generate ./...
     - mkdir -p $GOCACHE
     - go build -o auth ./cmd/auth
   cache:
