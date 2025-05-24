@@ -143,28 +143,27 @@ func (x *SignupRequest) GetPassword() string {
 	return ""
 }
 
-type LoginRequest struct {
+type Email struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *LoginRequest) Reset() {
-	*x = LoginRequest{}
+func (x *Email) Reset() {
+	*x = Email{}
 	mi := &file_auth_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *LoginRequest) String() string {
+func (x *Email) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*LoginRequest) ProtoMessage() {}
+func (*Email) ProtoMessage() {}
 
-func (x *LoginRequest) ProtoReflect() protoreflect.Message {
+func (x *Email) ProtoReflect() protoreflect.Message {
 	mi := &file_auth_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -176,21 +175,14 @@ func (x *LoginRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use LoginRequest.ProtoReflect.Descriptor instead.
-func (*LoginRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use Email.ProtoReflect.Descriptor instead.
+func (*Email) Descriptor() ([]byte, []int) {
 	return file_auth_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *LoginRequest) GetEmail() string {
+func (x *Email) GetEmail() string {
 	if x != nil {
 		return x.Email
-	}
-	return ""
-}
-
-func (x *LoginRequest) GetPassword() string {
-	if x != nil {
-		return x.Password
 	}
 	return ""
 }
@@ -467,10 +459,9 @@ const file_auth_proto_rawDesc = "" +
 	"patronymic\x18\x04 \x01(\tH\x00R\n" +
 	"patronymic\x88\x01\x01\x12\x1a\n" +
 	"\bpassword\x18\x05 \x01(\tR\bpasswordB\r\n" +
-	"\v_patronymic\"@\n" +
-	"\fLoginRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"\x14\n" +
+	"\v_patronymic\"\x1d\n" +
+	"\x05Email\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\"\x14\n" +
 	"\x02Id\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\"\xd6\x01\n" +
 	"\rUpdateRequest\x12\x14\n" +
@@ -503,16 +494,16 @@ const file_auth_proto_rawDesc = "" +
 	"\x05Empty*\x1b\n" +
 	"\x04Role\x12\t\n" +
 	"\x05ADMIN\x10\x00\x12\b\n" +
-	"\x04USER\x10\x012\xdd\x01\n" +
+	"\x04USER\x10\x012\xd4\x01\n" +
 	"\x0eAuthentication\x12+\n" +
 	"\n" +
-	"SignupUser\x12\x0e.SignupRequest\x1a\r.UserResponse\x12)\n" +
-	"\tLoginUser\x12\r.LoginRequest\x1a\r.UserResponse\x12!\n" +
+	"SignupUser\x12\x0e.SignupRequest\x1a\r.UserResponse\x12'\n" +
+	"\x0eGetUserByEmail\x12\x06.Email\x1a\r.UserResponse\x12!\n" +
 	"\vGetUserById\x12\x03.Id\x1a\r.UserResponse\x12+\n" +
 	"\n" +
-	"UpdateUser\x12\x0e.UpdateRequest\x1a\r.UserResponse\x12#\n" +
+	"UpdateUser\x12\x0e.UpdateRequest\x1a\r.UserResponse\x12\x1c\n" +
 	"\n" +
-	"DeleteUser\x12\r.LoginRequest\x1a\x06.EmptyB1\n" +
+	"DeleteUser\x12\x06.Email\x1a\x06.EmptyB1\n" +
 	" centraluniversity.app.booking.pbP\x01Z\vinternal/pbb\x06proto3"
 
 var (
@@ -532,7 +523,7 @@ var file_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_auth_proto_goTypes = []any{
 	(Role)(0),             // 0: Role
 	(*SignupRequest)(nil), // 1: SignupRequest
-	(*LoginRequest)(nil),  // 2: LoginRequest
+	(*Email)(nil),         // 2: Email
 	(*Id)(nil),            // 3: Id
 	(*UpdateRequest)(nil), // 4: UpdateRequest
 	(*UserResponse)(nil),  // 5: UserResponse
@@ -541,12 +532,12 @@ var file_auth_proto_goTypes = []any{
 var file_auth_proto_depIdxs = []int32{
 	0, // 0: UserResponse.role:type_name -> Role
 	1, // 1: Authentication.SignupUser:input_type -> SignupRequest
-	2, // 2: Authentication.LoginUser:input_type -> LoginRequest
+	2, // 2: Authentication.GetUserByEmail:input_type -> Email
 	3, // 3: Authentication.GetUserById:input_type -> Id
 	4, // 4: Authentication.UpdateUser:input_type -> UpdateRequest
-	2, // 5: Authentication.DeleteUser:input_type -> LoginRequest
+	2, // 5: Authentication.DeleteUser:input_type -> Email
 	5, // 6: Authentication.SignupUser:output_type -> UserResponse
-	5, // 7: Authentication.LoginUser:output_type -> UserResponse
+	5, // 7: Authentication.GetUserByEmail:output_type -> UserResponse
 	5, // 8: Authentication.GetUserById:output_type -> UserResponse
 	5, // 9: Authentication.UpdateUser:output_type -> UserResponse
 	6, // 10: Authentication.DeleteUser:output_type -> Empty
