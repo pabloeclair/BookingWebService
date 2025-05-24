@@ -238,7 +238,7 @@ type UpdateRequest struct {
 	SecondName    string                 `protobuf:"bytes,3,opt,name=second_name,json=secondName,proto3" json:"second_name,omitempty"`
 	Patronymic    *string                `protobuf:"bytes,4,opt,name=patronymic,proto3,oneof" json:"patronymic,omitempty"`
 	Password      string                 `protobuf:"bytes,5,opt,name=password,proto3" json:"password,omitempty"`
-	AuthHeader    string                 `protobuf:"bytes,6,opt,name=auth_header,json=authHeader,proto3" json:"auth_header,omitempty"`
+	Token         string                 `protobuf:"bytes,6,opt,name=token,proto3" json:"token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -308,9 +308,9 @@ func (x *UpdateRequest) GetPassword() string {
 	return ""
 }
 
-func (x *UpdateRequest) GetAuthHeader() string {
+func (x *UpdateRequest) GetToken() string {
 	if x != nil {
-		return x.AuthHeader
+		return x.Token
 	}
 	return ""
 }
@@ -323,7 +323,7 @@ type UserResponse struct {
 	SecondName    string                 `protobuf:"bytes,4,opt,name=second_name,json=secondName,proto3" json:"second_name,omitempty"`
 	Patronymic    *string                `protobuf:"bytes,5,opt,name=patronymic,proto3,oneof" json:"patronymic,omitempty"`
 	Role          Role                   `protobuf:"varint,6,opt,name=role,proto3,enum=Role" json:"role,omitempty"`
-	AuthHeader    string                 `protobuf:"bytes,7,opt,name=auth_header,json=authHeader,proto3" json:"auth_header,omitempty"`
+	Token         string                 `protobuf:"bytes,7,opt,name=token,proto3" json:"token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -400,9 +400,9 @@ func (x *UserResponse) GetRole() Role {
 	return Role_ADMIN
 }
 
-func (x *UserResponse) GetAuthHeader() string {
+func (x *UserResponse) GetToken() string {
 	if x != nil {
-		return x.AuthHeader
+		return x.Token
 	}
 	return ""
 }
@@ -463,7 +463,7 @@ const file_auth_proto_rawDesc = "" +
 	"\x05Email\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\"\x14\n" +
 	"\x02Id\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\rR\x02id\"\xd6\x01\n" +
+	"\x02id\x18\x01 \x01(\rR\x02id\"\xcb\x01\n" +
 	"\rUpdateRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1d\n" +
 	"\n" +
@@ -473,10 +473,9 @@ const file_auth_proto_rawDesc = "" +
 	"\n" +
 	"patronymic\x18\x04 \x01(\tH\x00R\n" +
 	"patronymic\x88\x01\x01\x12\x1a\n" +
-	"\bpassword\x18\x05 \x01(\tR\bpassword\x12\x1f\n" +
-	"\vauth_header\x18\x06 \x01(\tR\n" +
-	"authHeaderB\r\n" +
-	"\v_patronymic\"\xe4\x01\n" +
+	"\bpassword\x18\x05 \x01(\tR\bpassword\x12\x14\n" +
+	"\x05token\x18\x06 \x01(\tR\x05tokenB\r\n" +
+	"\v_patronymic\"\xd9\x01\n" +
 	"\fUserResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1d\n" +
@@ -487,9 +486,8 @@ const file_auth_proto_rawDesc = "" +
 	"\n" +
 	"patronymic\x18\x05 \x01(\tH\x00R\n" +
 	"patronymic\x88\x01\x01\x12\x19\n" +
-	"\x04role\x18\x06 \x01(\x0e2\x05.RoleR\x04role\x12\x1f\n" +
-	"\vauth_header\x18\a \x01(\tR\n" +
-	"authHeaderB\r\n" +
+	"\x04role\x18\x06 \x01(\x0e2\x05.RoleR\x04role\x12\x14\n" +
+	"\x05token\x18\a \x01(\tR\x05tokenB\r\n" +
 	"\v_patronymic\"\a\n" +
 	"\x05Empty*\x1b\n" +
 	"\x04Role\x12\t\n" +

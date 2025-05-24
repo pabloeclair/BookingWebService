@@ -31,7 +31,7 @@ message UpdateRequest {
     string second_name = 3;
     optional string patronymic = 4;
     string password = 5;
-    string auth_header = 6;
+    string token = 6;
 }
 
 message UserResponse {
@@ -41,7 +41,7 @@ message UserResponse {
     string second_name = 4;
     optional string patronymic = 5;
     Role role = 6;
-    string auth_header = 7;
+    string token = 7;
 }
 
 message Empty {}
