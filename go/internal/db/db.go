@@ -164,6 +164,30 @@ func GetUserByEmail(email string) (User, error) {
 	return res, nil
 }
 
+func GetUserById(id uint32) (User, error) {
+
+	var res User
+	db, err := sqlx.Connect("pgx", os.Getenv("DSN"))
+	if err != nil {
+		return res, fmt.Errorf("getting user by id: connection to db: %w", err)
+	}
+	defer db.Close()
+
+	timeout, err := getSqlTimeout()
+	if err != nil {
+		return res, fmt.Errorf("getting user by id: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	query := `SELECT * FROM users WHERE id = $1;`
+	if err := db.GetContext(ctx, &res, query, id); err != nil {
+		return res, fmt.Errorf("getting user by id: select error: %w", err)
+	}
+	return res, nil
+}
+
 func UpdateUser(oldEmail string, user User) (User, error) {
 
 	var res User
