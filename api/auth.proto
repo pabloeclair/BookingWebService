@@ -17,9 +17,8 @@ message SignupRequest {
     string password = 5;
 }
 
-message LoginRequest {
+message Email {
     string email = 1;
-    string password = 2;
 }
 
 message Id {
@@ -49,8 +48,8 @@ message Empty {}
 
 service Authentication {
     rpc SignupUser (SignupRequest) returns (UserResponse);
-    rpc LoginUser (LoginRequest) returns (UserResponse);
+    rpc GetUserByEmail (Email) returns (UserResponse);
     rpc GetUserById (Id) returns (UserResponse);
     rpc UpdateUser (UpdateRequest) returns (UserResponse);
-    rpc DeleteUser (LoginRequest) returns (Empty);
+    rpc DeleteUser (Email) returns (Empty);
 }
