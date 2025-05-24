@@ -17,7 +17,8 @@ import (
 
 var (
 	ErrConDB      = errors.New("connection to the database failed")
-	ErrUserExists = errors.New("user with this email already exists")
+	ErrBadRequest = errors.New("bad request")
+	ErrNotFound   = errors.New("not found")
 )
 
 type User struct {
@@ -115,11 +116,11 @@ func CreateUser(user User) (User, error) {
 	defer cancel()
 	defer db.Close()
 
-	if _, err = GetUserByEmail(user.Email); !errors.Is(err, sql.ErrNoRows) {
+	if _, err = GetUserByEmail(user.Email); !errors.Is(err, ErrNotFound) {
 		if err != nil {
 			return res, fmt.Errorf("creating user: email existence verification error: %w", err)
 		}
-		return res, fmt.Errorf("creating user: email existence verification error: %w", ErrUserExists)
+		return res, fmt.Errorf("%w: user with the email %s already exists", ErrBadRequest, user.Email)
 	}
 
 	var id uint32
@@ -159,6 +160,9 @@ func GetUserByEmail(email string) (User, error) {
 
 	query := `SELECT * FROM users WHERE email = $1;`
 	if err := db.GetContext(ctx, &res, query, email); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return res, fmt.Errorf("%w: user with the email %s doesn't exist", ErrNotFound, email)
+		}
 		return res, fmt.Errorf("getting user by email: select error: %w", err)
 	}
 	return res, nil
@@ -176,6 +180,9 @@ func GetUserById(id uint32) (User, error) {
 
 	query := `SELECT * FROM users WHERE id = $1;`
 	if err := db.GetContext(ctx, &res, query, id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return res, fmt.Errorf("%w: user with the id %d doesn't exist", ErrNotFound, id)
+		}
 		return res, fmt.Errorf("getting user by id: select error: %w", err)
 	}
 	return res, nil
@@ -223,6 +230,9 @@ func DeleteUser(email string) error {
 	defer db.Close()
 
 	if _, err := db.ExecContext(ctx, `DELETE FROM users WHERE email = $1`, email); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("%w: user with the email %s doesn't exist", ErrNotFound, email)
+		}
 		return fmt.Errorf("deleting user: db error: %w", err)
 	}
 	return nil
