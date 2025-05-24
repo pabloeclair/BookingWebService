@@ -99,6 +99,22 @@ func (s *AuthServer) LoginUser(ctx context.Context, req *pb.LoginRequest) (*pb.U
 	}
 }
 
+func (s *AuthServer) GetUserById(ctx context.Context, req *pb.Id) (*pb.UserResponse, error) {
+
+	s.mu.RLock()
+	res, err := db.GetUserById(req.GetId())
+	s.mu.RUnlock()
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, status.Errorf(codes.NotFound, "log in error: db error: %v", err)
+		} else {
+			return nil, status.Errorf(codes.Internal, "log in error: db error: %v", err)
+		}
+	}
+
+	return parseToResult(res), nil
+}
+
 func (s *AuthServer) UpdateUser(ctx context.Context, req *pb.UpdateRequest) (*pb.UserResponse, error) {
 
 	user := db.User{
