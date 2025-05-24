@@ -18,24 +18,13 @@ import (
 var ErrConDB = errors.New("connection to the database failed")
 
 type User struct {
-	ID         uint32  `db:"id"`
-	Email      string  `db:"email"`
-	FirstName  string  `db:"first_name"`
-	SecondName string  `db:"second_name"`
-	Patronymic string  `db:"patronymic"`
-	Password   string  `db:"password"`
-	Role       pb.Role `db:"role"`
-}
-
-type SignUpResponse struct {
-	ID   uint32
-	Role pb.Role
-}
-
-type LoginUserData struct {
-	ID       uint32 `db:"email"`
-	Email    string `db:"email"`
-	Password string `db:"password"`
+	ID         uint32 `db:"id"`
+	Email      string `db:"email"`
+	FirstName  string `db:"first_name"`
+	SecondName string `db:"second_name"`
+	Patronymic string `db:"patronymic"`
+	Password   string `db:"password"`
+	Role       string `db:"role"`
 }
 
 func getSqlTimeout() (time.Duration, error) {
@@ -111,9 +100,9 @@ func DeleteTable() error {
 	return nil
 }
 
-func CreateUser(user User) (SignUpResponse, error) {
+func CreateUser(user User) (User, error) {
 
-	var res SignUpResponse
+	var res User
 	db, err := sqlx.Connect("pgx", os.Getenv("DSN"))
 	if err != nil {
 		return res, fmt.Errorf("creating user: connection to db: %w", err)
@@ -137,8 +126,7 @@ func CreateUser(user User) (SignUpResponse, error) {
 			return res, fmt.Errorf("creating user: select error: %w", err)
 		}
 	}
-	user.Role = role
-	res.Role = role
+	user.Role = role.String()
 
 	queryInsert := `INSERT INTO users (email, first_name, second_name, patronymic, password, role) 
 		VALUES (:email, :first_name, :second_name, :patronymic, :password, :role);`
@@ -146,55 +134,54 @@ func CreateUser(user User) (SignUpResponse, error) {
 		return res, fmt.Errorf("creating user: insert error: %w", err)
 	}
 
-	if err := db.GetContext(ctx, &id, `SELECT id FROM users WHERE email = $1`, user.Email); err != nil {
+	if err := db.GetContext(ctx, &res, `SELECT * FROM users WHERE email = $1`, user.Email); err != nil {
 		return res, fmt.Errorf("creating user: get id error: %w", err)
 	}
-	res.ID = id
-
 	return res, nil
 }
 
-func GetUserByEmail(email string) (LoginUserData, error) {
+func GetUserByEmail(email string) (User, error) {
 
-	var out LoginUserData
+	var res User
 	db, err := sqlx.Connect("pgx", os.Getenv("DSN"))
 	if err != nil {
-		return out, fmt.Errorf("getting user by email: connection to db: %w", err)
+		return res, fmt.Errorf("getting user by email: connection to db: %w", err)
 	}
 	defer db.Close()
 
 	timeout, err := getSqlTimeout()
 	if err != nil {
-		return out, fmt.Errorf("getting user by email: %w", err)
+		return res, fmt.Errorf("getting user by email: %w", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	query := `SELECT id, email, password FROM users WHERE email = $1;`
-	if err := db.GetContext(ctx, &out, query, email); err != nil {
-		return out, fmt.Errorf("getting user by email: select error: %w", err)
+	query := `SELECT * FROM users WHERE email = $1;`
+	if err := db.GetContext(ctx, &res, query, email); err != nil {
+		return res, fmt.Errorf("getting user by email: select error: %w", err)
 	}
-	return out, nil
+	return res, nil
 }
 
-func UpdateUser(oldEmail string, user User) error {
+func UpdateUser(oldEmail string, user User) (User, error) {
 
+	var res User
 	res, err := GetUserByEmail(oldEmail)
 	if err != nil {
-		return fmt.Errorf("updating user: %w", err)
+		return res, fmt.Errorf("updating user: %w", err)
 	}
 	user.ID = res.ID
 
 	db, err := sqlx.Connect("pgx", os.Getenv("DSN"))
 	if err != nil {
-		return fmt.Errorf("getting user by email: connection to db: %w", err)
+		return res, fmt.Errorf("getting user by email: connection to db: %w", err)
 	}
 	defer db.Close()
 
 	timeout, err := getSqlTimeout()
 	if err != nil {
-		return fmt.Errorf("getting user by email: %w", err)
+		return res, fmt.Errorf("getting user by email: %w", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -205,10 +192,15 @@ func UpdateUser(oldEmail string, user User) error {
 		patronymic := patronymic, password := password WHERE id := id`
 
 	if _, err := db.NamedExecContext(ctx, query, &user); err != nil {
-		return fmt.Errorf("updating user: update error: %w", err)
+		return res, fmt.Errorf("updating user: update error: %w", err)
 	}
 
-	return nil
+	query = `SELECT * FROM users WHERE email = $1;`
+	if err := db.GetContext(ctx, &res, query, user.Email); err != nil {
+		return res, fmt.Errorf("getting user by email: select error: %w", err)
+	}
+	return res, nil
+
 }
 
 func DeleteUser(email string) error {
