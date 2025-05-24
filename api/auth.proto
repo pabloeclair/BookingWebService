@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 option go_package = "internal/pb";
-option java_package = "com.centraluniversity.booking";
+option java_package = "centraluniversity.app.booking.pb";
 option java_multiple_files = true;
 
 enum Role {
@@ -9,7 +9,7 @@ enum Role {
     USER = 1;
 }
 
-message SignUpRequest {
+message SignupRequest {
     string email = 1;
     string first_name = 2;
     string second_name = 3;
@@ -17,19 +17,13 @@ message SignUpRequest {
     string password = 5;
 }
 
-message SignUpResponse {
-    uint32 id = 1;
-    Role role = 2;
-    string auth_header = 3;
-}
-
-message EmailPassword {
+message LoginRequest {
     string email = 1;
     string password = 2;
 }
 
-message AuthHeader {
-    string auth_header = 1;
+message Id {
+    uint32 id = 1;
 }
 
 message UpdateRequest {
@@ -41,11 +35,22 @@ message UpdateRequest {
     string auth_header = 6;
 }
 
+message UserResponse {
+    uint32 id = 1;
+    string email = 2;
+    string first_name = 3;
+    string second_name = 4;
+    optional string patronymic = 5;
+    Role role = 6;
+    string auth_header = 7;
+}
+
 message Empty {}
 
 service Authentication {
-    rpc SignUpUser (SignUpRequest) returns (SignUpResponse);
-    rpc LogInUser (EmailPassword) returns (AuthHeader);
-    rpc UpdateUser (UpdateRequest) returns (AuthHeader);
-    rpc DeleteUser (EmailPassword) returns (Empty);
+    rpc SignupUser (SignupRequest) returns (UserResponse);
+    rpc LoginUser (LoginRequest) returns (UserResponse);
+    rpc GetUserById (Id) returns (UserResponse);
+    rpc UpdateUser (UpdateRequest) returns (UserResponse);
+    rpc DeleteUser (LoginRequest) returns (Empty);
 }
