@@ -4,19 +4,21 @@ import {BrowserRouter, Route, Routes} from "react-router";
 import Signup from "./auth/Signup.jsx";
 import React from "react";
 import Login from "./auth/Login.jsx";
+import Navigation from "./Navigation.jsx"
 
 function App() {
     return (
-        <AuthProvider>
-            <BrowserRouter>
+        <BrowserRouter>
+            <AuthProvider>
                 <img src={"../resources/Central_University_full.png"}
                      id={"logo"} alt={"Логотип Центрального университета"} key={"cu_logo"}/>
                 <Routes>
                     <Route path={"/user/login"} element={<Login/>}/>
-                    <Route path={"user/signup"} element={<Signup/>}/>
+                    <Route path={"/user/signup"} element={<Signup/>}/>
+                    <Route path={"*"} element={<Navigation/>}/>
                 </Routes>
-            </BrowserRouter>
-        </AuthProvider>
+            </AuthProvider>
+        </BrowserRouter>
     );
 }
 
