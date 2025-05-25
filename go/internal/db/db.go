@@ -17,8 +17,8 @@ import (
 
 var (
 	ErrConDB      = errors.New("connection to the database failed")
-	ErrBadRequest = errors.New("bad request")
-	ErrNotFound   = errors.New("not found")
+	ErrBadRequest = errors.New("db error")
+	ErrNotFound   = errors.New("db error")
 )
 
 type User struct {
