@@ -24,11 +24,11 @@ services:
     depends_on:
       - db
   
-  booking_service:
+  bookingapi:
     build: 
       context: .
       target: web
-    container_name: booking_service
+    container_name: bookingapi
     environment:
       - JAVA_SOURCE=${JAVA_SOURCE}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -44,7 +44,7 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - booking_service
+      - bookingapi
 
 volumes:
   postgres_data:
