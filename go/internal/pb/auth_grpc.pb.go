@@ -23,6 +23,7 @@ const (
 	Authentication_GetUserByEmail_FullMethodName = "/Authentication/GetUserByEmail"
 	Authentication_GetUserById_FullMethodName    = "/Authentication/GetUserById"
 	Authentication_UpdateUser_FullMethodName     = "/Authentication/UpdateUser"
+	Authentication_UpdatePassword_FullMethodName = "/Authentication/UpdatePassword"
 	Authentication_DeleteUser_FullMethodName     = "/Authentication/DeleteUser"
 )
 
@@ -34,6 +35,7 @@ type AuthenticationClient interface {
 	GetUserByEmail(ctx context.Context, in *Email, opts ...grpc.CallOption) (*UserResponse, error)
 	GetUserById(ctx context.Context, in *Id, opts ...grpc.CallOption) (*UserResponse, error)
 	UpdateUser(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UserResponse, error)
+	UpdatePassword(ctx context.Context, in *UpdatePasswordRequest, opts ...grpc.CallOption) (*UserResponse, error)
 	DeleteUser(ctx context.Context, in *Email, opts ...grpc.CallOption) (*Empty, error)
 }
 
@@ -85,6 +87,16 @@ func (c *authenticationClient) UpdateUser(ctx context.Context, in *UpdateRequest
 	return out, nil
 }
 
+func (c *authenticationClient) UpdatePassword(ctx context.Context, in *UpdatePasswordRequest, opts ...grpc.CallOption) (*UserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UserResponse)
+	err := c.cc.Invoke(ctx, Authentication_UpdatePassword_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *authenticationClient) DeleteUser(ctx context.Context, in *Email, opts ...grpc.CallOption) (*Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Empty)
@@ -103,6 +115,7 @@ type AuthenticationServer interface {
 	GetUserByEmail(context.Context, *Email) (*UserResponse, error)
 	GetUserById(context.Context, *Id) (*UserResponse, error)
 	UpdateUser(context.Context, *UpdateRequest) (*UserResponse, error)
+	UpdatePassword(context.Context, *UpdatePasswordRequest) (*UserResponse, error)
 	DeleteUser(context.Context, *Email) (*Empty, error)
 	mustEmbedUnimplementedAuthenticationServer()
 }
@@ -125,6 +138,9 @@ func (UnimplementedAuthenticationServer) GetUserById(context.Context, *Id) (*Use
 }
 func (UnimplementedAuthenticationServer) UpdateUser(context.Context, *UpdateRequest) (*UserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateUser not implemented")
+}
+func (UnimplementedAuthenticationServer) UpdatePassword(context.Context, *UpdatePasswordRequest) (*UserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdatePassword not implemented")
 }
 func (UnimplementedAuthenticationServer) DeleteUser(context.Context, *Email) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteUser not implemented")
@@ -222,6 +238,24 @@ func _Authentication_UpdateUser_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Authentication_UpdatePassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdatePasswordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthenticationServer).UpdatePassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Authentication_UpdatePassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthenticationServer).UpdatePassword(ctx, req.(*UpdatePasswordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Authentication_DeleteUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Email)
 	if err := dec(in); err != nil {
@@ -262,6 +296,10 @@ var Authentication_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateUser",
 			Handler:    _Authentication_UpdateUser_Handler,
+		},
+		{
+			MethodName: "UpdatePassword",
+			Handler:    _Authentication_UpdatePassword_Handler,
 		},
 		{
 			MethodName: "DeleteUser",

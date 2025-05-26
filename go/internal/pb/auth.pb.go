@@ -24,8 +24,9 @@ const (
 type Role int32
 
 const (
-	Role_ADMIN Role = 0
-	Role_USER  Role = 1
+	Role_ADMIN      Role = 0
+	Role_USER       Role = 1
+	Role_MAIN_ADMIN Role = 2
 )
 
 // Enum value maps for Role.
@@ -33,10 +34,12 @@ var (
 	Role_name = map[int32]string{
 		0: "ADMIN",
 		1: "USER",
+		2: "MAIN_ADMIN",
 	}
 	Role_value = map[string]int32{
-		"ADMIN": 0,
-		"USER":  1,
+		"ADMIN":      0,
+		"USER":       1,
+		"MAIN_ADMIN": 2,
 	}
 )
 
@@ -146,6 +149,7 @@ func (x *SignupRequest) GetPassword() string {
 type Email struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -187,9 +191,18 @@ func (x *Email) GetEmail() string {
 	return ""
 }
 
+func (x *Email) GetPassword() string {
+	if x != nil {
+		return x.Password
+	}
+	return ""
+}
+
 type Id struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	AdminEmail    string                 `protobuf:"bytes,2,opt,name=admin_email,json=adminEmail,proto3" json:"admin_email,omitempty"`
+	AdminPassword string                 `protobuf:"bytes,3,opt,name=admin_password,json=adminPassword,proto3" json:"admin_password,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -231,6 +244,20 @@ func (x *Id) GetId() uint32 {
 	return 0
 }
 
+func (x *Id) GetAdminEmail() string {
+	if x != nil {
+		return x.AdminEmail
+	}
+	return ""
+}
+
+func (x *Id) GetAdminPassword() string {
+	if x != nil {
+		return x.AdminPassword
+	}
+	return ""
+}
+
 type UpdateRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
@@ -238,7 +265,7 @@ type UpdateRequest struct {
 	SecondName    string                 `protobuf:"bytes,3,opt,name=second_name,json=secondName,proto3" json:"second_name,omitempty"`
 	Patronymic    *string                `protobuf:"bytes,4,opt,name=patronymic,proto3,oneof" json:"patronymic,omitempty"`
 	Password      string                 `protobuf:"bytes,5,opt,name=password,proto3" json:"password,omitempty"`
-	Token         string                 `protobuf:"bytes,6,opt,name=token,proto3" json:"token,omitempty"`
+	OldEmail      string                 `protobuf:"bytes,6,opt,name=old_email,json=oldEmail,proto3" json:"old_email,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -308,9 +335,9 @@ func (x *UpdateRequest) GetPassword() string {
 	return ""
 }
 
-func (x *UpdateRequest) GetToken() string {
+func (x *UpdateRequest) GetOldEmail() string {
 	if x != nil {
-		return x.Token
+		return x.OldEmail
 	}
 	return ""
 }
@@ -323,7 +350,7 @@ type UserResponse struct {
 	SecondName    string                 `protobuf:"bytes,4,opt,name=second_name,json=secondName,proto3" json:"second_name,omitempty"`
 	Patronymic    *string                `protobuf:"bytes,5,opt,name=patronymic,proto3,oneof" json:"patronymic,omitempty"`
 	Role          Role                   `protobuf:"varint,6,opt,name=role,proto3,enum=Role" json:"role,omitempty"`
-	Token         string                 `protobuf:"bytes,7,opt,name=token,proto3" json:"token,omitempty"`
+	Password      string                 `protobuf:"bytes,7,opt,name=password,proto3" json:"password,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -400,9 +427,69 @@ func (x *UserResponse) GetRole() Role {
 	return Role_ADMIN
 }
 
-func (x *UserResponse) GetToken() string {
+func (x *UserResponse) GetPassword() string {
 	if x != nil {
-		return x.Token
+		return x.Password
+	}
+	return ""
+}
+
+type UpdatePasswordRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	OldPassword   string                 `protobuf:"bytes,2,opt,name=old_password,json=oldPassword,proto3" json:"old_password,omitempty"`
+	NewPassword   string                 `protobuf:"bytes,3,opt,name=new_password,json=newPassword,proto3" json:"new_password,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdatePasswordRequest) Reset() {
+	*x = UpdatePasswordRequest{}
+	mi := &file_auth_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdatePasswordRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdatePasswordRequest) ProtoMessage() {}
+
+func (x *UpdatePasswordRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdatePasswordRequest.ProtoReflect.Descriptor instead.
+func (*UpdatePasswordRequest) Descriptor() ([]byte, []int) {
+	return file_auth_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *UpdatePasswordRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *UpdatePasswordRequest) GetOldPassword() string {
+	if x != nil {
+		return x.OldPassword
+	}
+	return ""
+}
+
+func (x *UpdatePasswordRequest) GetNewPassword() string {
+	if x != nil {
+		return x.NewPassword
 	}
 	return ""
 }
@@ -415,7 +502,7 @@ type Empty struct {
 
 func (x *Empty) Reset() {
 	*x = Empty{}
-	mi := &file_auth_proto_msgTypes[5]
+	mi := &file_auth_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -427,7 +514,7 @@ func (x *Empty) String() string {
 func (*Empty) ProtoMessage() {}
 
 func (x *Empty) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_proto_msgTypes[5]
+	mi := &file_auth_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -440,7 +527,7 @@ func (x *Empty) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Empty.ProtoReflect.Descriptor instead.
 func (*Empty) Descriptor() ([]byte, []int) {
-	return file_auth_proto_rawDescGZIP(), []int{5}
+	return file_auth_proto_rawDescGZIP(), []int{6}
 }
 
 var File_auth_proto protoreflect.FileDescriptor
@@ -459,11 +546,15 @@ const file_auth_proto_rawDesc = "" +
 	"patronymic\x18\x04 \x01(\tH\x00R\n" +
 	"patronymic\x88\x01\x01\x12\x1a\n" +
 	"\bpassword\x18\x05 \x01(\tR\bpasswordB\r\n" +
-	"\v_patronymic\"\x1d\n" +
+	"\v_patronymic\"9\n" +
 	"\x05Email\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\"\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\"\\\n" +
 	"\x02Id\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\rR\x02id\"\xcb\x01\n" +
+	"\x02id\x18\x01 \x01(\rR\x02id\x12\x1f\n" +
+	"\vadmin_email\x18\x02 \x01(\tR\n" +
+	"adminEmail\x12%\n" +
+	"\x0eadmin_password\x18\x03 \x01(\tR\radminPassword\"\xd2\x01\n" +
 	"\rUpdateRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1d\n" +
 	"\n" +
@@ -473,9 +564,9 @@ const file_auth_proto_rawDesc = "" +
 	"\n" +
 	"patronymic\x18\x04 \x01(\tH\x00R\n" +
 	"patronymic\x88\x01\x01\x12\x1a\n" +
-	"\bpassword\x18\x05 \x01(\tR\bpassword\x12\x14\n" +
-	"\x05token\x18\x06 \x01(\tR\x05tokenB\r\n" +
-	"\v_patronymic\"\xd9\x01\n" +
+	"\bpassword\x18\x05 \x01(\tR\bpassword\x12\x1b\n" +
+	"\told_email\x18\x06 \x01(\tR\boldEmailB\r\n" +
+	"\v_patronymic\"\xdf\x01\n" +
 	"\fUserResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1d\n" +
@@ -486,20 +577,27 @@ const file_auth_proto_rawDesc = "" +
 	"\n" +
 	"patronymic\x18\x05 \x01(\tH\x00R\n" +
 	"patronymic\x88\x01\x01\x12\x19\n" +
-	"\x04role\x18\x06 \x01(\x0e2\x05.RoleR\x04role\x12\x14\n" +
-	"\x05token\x18\a \x01(\tR\x05tokenB\r\n" +
-	"\v_patronymic\"\a\n" +
-	"\x05Empty*\x1b\n" +
+	"\x04role\x18\x06 \x01(\x0e2\x05.RoleR\x04role\x12\x1a\n" +
+	"\bpassword\x18\a \x01(\tR\bpasswordB\r\n" +
+	"\v_patronymic\"s\n" +
+	"\x15UpdatePasswordRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12!\n" +
+	"\fold_password\x18\x02 \x01(\tR\voldPassword\x12!\n" +
+	"\fnew_password\x18\x03 \x01(\tR\vnewPassword\"\a\n" +
+	"\x05Empty*+\n" +
 	"\x04Role\x12\t\n" +
 	"\x05ADMIN\x10\x00\x12\b\n" +
-	"\x04USER\x10\x012\xd4\x01\n" +
+	"\x04USER\x10\x01\x12\x0e\n" +
+	"\n" +
+	"MAIN_ADMIN\x10\x022\x8d\x02\n" +
 	"\x0eAuthentication\x12+\n" +
 	"\n" +
 	"SignupUser\x12\x0e.SignupRequest\x1a\r.UserResponse\x12'\n" +
 	"\x0eGetUserByEmail\x12\x06.Email\x1a\r.UserResponse\x12!\n" +
 	"\vGetUserById\x12\x03.Id\x1a\r.UserResponse\x12+\n" +
 	"\n" +
-	"UpdateUser\x12\x0e.UpdateRequest\x1a\r.UserResponse\x12\x1c\n" +
+	"UpdateUser\x12\x0e.UpdateRequest\x1a\r.UserResponse\x127\n" +
+	"\x0eUpdatePassword\x12\x16.UpdatePasswordRequest\x1a\r.UserResponse\x12\x1c\n" +
 	"\n" +
 	"DeleteUser\x12\x06.Email\x1a\x06.EmptyB1\n" +
 	" centraluniversity.app.booking.pbP\x01Z\vinternal/pbb\x06proto3"
@@ -517,15 +615,16 @@ func file_auth_proto_rawDescGZIP() []byte {
 }
 
 var file_auth_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_auth_proto_goTypes = []any{
-	(Role)(0),             // 0: Role
-	(*SignupRequest)(nil), // 1: SignupRequest
-	(*Email)(nil),         // 2: Email
-	(*Id)(nil),            // 3: Id
-	(*UpdateRequest)(nil), // 4: UpdateRequest
-	(*UserResponse)(nil),  // 5: UserResponse
-	(*Empty)(nil),         // 6: Empty
+	(Role)(0),                     // 0: Role
+	(*SignupRequest)(nil),         // 1: SignupRequest
+	(*Email)(nil),                 // 2: Email
+	(*Id)(nil),                    // 3: Id
+	(*UpdateRequest)(nil),         // 4: UpdateRequest
+	(*UserResponse)(nil),          // 5: UserResponse
+	(*UpdatePasswordRequest)(nil), // 6: UpdatePasswordRequest
+	(*Empty)(nil),                 // 7: Empty
 }
 var file_auth_proto_depIdxs = []int32{
 	0, // 0: UserResponse.role:type_name -> Role
@@ -533,14 +632,16 @@ var file_auth_proto_depIdxs = []int32{
 	2, // 2: Authentication.GetUserByEmail:input_type -> Email
 	3, // 3: Authentication.GetUserById:input_type -> Id
 	4, // 4: Authentication.UpdateUser:input_type -> UpdateRequest
-	2, // 5: Authentication.DeleteUser:input_type -> Email
-	5, // 6: Authentication.SignupUser:output_type -> UserResponse
-	5, // 7: Authentication.GetUserByEmail:output_type -> UserResponse
-	5, // 8: Authentication.GetUserById:output_type -> UserResponse
-	5, // 9: Authentication.UpdateUser:output_type -> UserResponse
-	6, // 10: Authentication.DeleteUser:output_type -> Empty
-	6, // [6:11] is the sub-list for method output_type
-	1, // [1:6] is the sub-list for method input_type
+	6, // 5: Authentication.UpdatePassword:input_type -> UpdatePasswordRequest
+	2, // 6: Authentication.DeleteUser:input_type -> Email
+	5, // 7: Authentication.SignupUser:output_type -> UserResponse
+	5, // 8: Authentication.GetUserByEmail:output_type -> UserResponse
+	5, // 9: Authentication.GetUserById:output_type -> UserResponse
+	5, // 10: Authentication.UpdateUser:output_type -> UserResponse
+	5, // 11: Authentication.UpdatePassword:output_type -> UserResponse
+	7, // 12: Authentication.DeleteUser:output_type -> Empty
+	7, // [7:13] is the sub-list for method output_type
+	1, // [1:7] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -560,7 +661,7 @@ func file_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_auth_proto_rawDesc), len(file_auth_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   6,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

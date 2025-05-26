@@ -7,6 +7,7 @@ option java_multiple_files = true;
 enum Role {
     ADMIN = 0;
     USER = 1;
+    MAIN_ADMIN = 2;
 }
 
 message SignupRequest {
@@ -24,6 +25,8 @@ message Email {
 
 message Id {
     uint32 id = 1;
+    string admin_email = 2;
+    string admin_password = 3;
 }
 
 message UpdateRequest {
@@ -32,7 +35,7 @@ message UpdateRequest {
     string second_name = 3;
     optional string patronymic = 4;
     string password = 5;
-    string token = 6;
+    string old_email = 6;
 }
 
 message UserResponse {
@@ -42,7 +45,13 @@ message UserResponse {
     string second_name = 4;
     optional string patronymic = 5;
     Role role = 6;
-    string token = 7;
+    string password = 7;
+}
+
+message UpdatePasswordRequest {
+    string email = 1;
+    string old_password = 2;
+    string new_password = 3;
 }
 
 message Empty {}
@@ -52,5 +61,6 @@ service Authentication {
     rpc GetUserByEmail (Email) returns (UserResponse);
     rpc GetUserById (Id) returns (UserResponse);
     rpc UpdateUser (UpdateRequest) returns (UserResponse);
+    rpc UpdatePassword (UpdatePasswordRequest) returns (UserResponse);
     rpc DeleteUser (Email) returns (Empty);
 }

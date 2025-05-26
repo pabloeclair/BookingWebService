@@ -14,7 +14,7 @@ public class UserResponseDto {
     private String firstName;
     private String secondName;
     private String patronymic;
-    private String token;
+    private String password;
     private Role role;
     
 }
