@@ -3,10 +3,10 @@ import {useContext} from "react";
 import AuthContext from "./auth/AuthContext.jsx";
 
 function Navigation() {
-    const {user, login, logout} = useContext(AuthContext);
+    const user = useContext(AuthContext).user;
 
     if (!user) {
-        return <Navigate to={"/user/login"} replace />;
+        return <Navigate to={"/login"} replace />;
     }
     return "HelloWorld";
 }
