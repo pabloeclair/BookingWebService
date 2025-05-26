@@ -124,15 +124,13 @@ func CreateUser(user User) (User, error) {
 	}
 
 	var id uint32
-	role := pb.Role_USER
 	if err = db.GetContext(ctx, &id, `SELECT id FROM users LIMIT 1`); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			role = pb.Role_ADMIN
+			user.Role = pb.Role_MAIN_ADMIN.String()
 		} else {
 			return res, fmt.Errorf("creating user: select error: %w", err)
 		}
 	}
-	user.Role = role.String()
 
 	queryInsert := `INSERT INTO users (email, first_name, second_name, patronymic, password, role) 
 		VALUES (:email, :first_name, :second_name, :patronymic, :password, :role);`
@@ -198,17 +196,14 @@ func UpdateUser(oldEmail string, user User) (User, error) {
 	defer cancel()
 	defer db.Close()
 
-	res, err = GetUserByEmail(oldEmail)
-	if err != nil {
-		return res, fmt.Errorf("updating user: %w", err)
-	}
-	user.ID = res.ID
-
 	query := `UPDATE users 
 		SET email = :email, first_name := first_name, second_name := second_name, 
-		patronymic := patronymic, password := password WHERE id := id`
+		patronymic := patronymic WHERE email := email`
 
 	if _, err := db.NamedExecContext(ctx, query, &user); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return res, fmt.Errorf("%w: user with the email %s doesn't exist", ErrNotFound, oldEmail)
+		}
 		return res, fmt.Errorf("updating user: update error: %w", err)
 	}
 

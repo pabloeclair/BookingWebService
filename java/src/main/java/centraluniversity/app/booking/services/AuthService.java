@@ -72,6 +72,8 @@ public class AuthService {
             Status status = e.getStatus();
             if (status.getCode() == Status.Code.ALREADY_EXISTS) {
                 throw new HttpStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+            } else if (status.getCode() == Status.Code.UNAUTHENTICATED) {
+                throw new HttpStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
             }
             throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         } 
@@ -82,7 +84,7 @@ public class AuthService {
             res.getFirstName(),
             res.getSecondName(),
             res.getPatronymic(),
-            res.getToken(),
+            res.getPassword(),
             res.getRole()
         );  
     }
@@ -103,6 +105,8 @@ public class AuthService {
             Status status = e.getStatus();
             if (status.getCode() == Status.Code.NOT_FOUND) {
                 throw new HttpStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+            } else if (status.getCode() == Status.Code.UNAUTHENTICATED) {
+                throw new HttpStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
             }
             throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         }
@@ -113,11 +117,12 @@ public class AuthService {
             res.getFirstName(),
             res.getSecondName(),
             res.getPatronymic(),
-            res.getToken(),
+            res.getPassword(),
             res.getRole()
         ); 
     }
 
+    // TODO: correct getbyid
     /**
      * Get user by id
      * @param id
@@ -143,7 +148,7 @@ public class AuthService {
             res.getFirstName(),
             res.getSecondName(),
             res.getPatronymic(),
-            res.getToken(),
+            res.getPassword(),
             res.getRole()
         ); 
     }
