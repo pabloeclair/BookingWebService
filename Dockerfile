@@ -1,4 +1,4 @@
-FROM golang:1.23.9
+FROM golang:1.23.9 AS grpc
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y protobuf-compiler && rm -rf /var/lib/apt/lists/*
@@ -9,9 +9,20 @@ ENV PATH="$PATH:$(go env GOPATH)/bin"
 COPY go.mod go.sum /app/
 RUN go mod download 
 
-COPY /go/ /app/go/
+COPY /go/ /app/go/ 
 COPY /api/ /app/api/
 RUN go generate ./... 
 
 RUN go build -o auth_server ./go/cmd/auth
-CMD ["./auth_server", "localhost:7676"]
+CMD ["./auth_server", "0.0.0.0:7676"]
+
+FROM gradle:8.14.0-jdk17 AS web
+WORKDIR /app
+RUN apt-get update && apt-get install -y protobuf-compiler && rm -rf /var/lib/apt/lists/*
+
+COPY /java/ . 
+RUN rm ./src/main/proto 
+COPY /api/ /app/src/main/proto
+
+RUN gradle build
+CMD ["gradle", "bootRun"]
