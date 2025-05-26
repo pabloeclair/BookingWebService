@@ -22,5 +22,13 @@ services:
     depends_on:
       - db
 
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - booking_service
+
 volumes:
   postgres_data:
