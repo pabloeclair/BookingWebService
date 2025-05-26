@@ -28,6 +28,8 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-jdbc")
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+	implementation("org.postgresql:postgresql:42.7.2")
+	implementation("javax.validation:validation-api:2.0.1.Final")
 	
 	implementation("com.google.protobuf:protobuf-java:4.30.2")
     implementation("io.grpc:grpc-netty-shaded:1.51.0")
