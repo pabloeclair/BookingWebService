@@ -35,7 +35,7 @@ func main() {
 			return
 		}
 
-		s := grpc.NewServer()
+		s := grpc.NewServer(grpc.UnaryInterceptor(auth.LogInterceptor))
 		pb.RegisterAuthenticationServer(s, &auth.AuthServer{})
 		log.Printf("The gRPC server of authentication starts on address %s.", lis.Addr().String())
 		if err = s.Serve(lis); err != nil {
@@ -44,7 +44,7 @@ func main() {
 	}()
 
 	go func() {
-		<-time.After(time.Second * 4)
+		<-time.After(time.Second * 7)
 		if err := db.CreateTable(); err != nil {
 			if errors.Is(err, db.ErrConDB) {
 				log.Fatal(err)

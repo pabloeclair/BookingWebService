@@ -15,27 +15,20 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-var ErrConDB = errors.New("connection to the database failed")
+var (
+	ErrConDB      = errors.New("connection to the database failed")
+	ErrBadRequest = errors.New("db error")
+	ErrNotFound   = errors.New("db error")
+)
 
 type User struct {
-	ID         uint32  `db:"id"`
-	Email      string  `db:"email"`
-	FirstName  string  `db:"first_name"`
-	SecondName string  `db:"second_name"`
-	Patronymic string  `db:"patronymic"`
-	Password   string  `db:"password"`
-	Role       pb.Role `db:"role"`
-}
-
-type SignUpResponse struct {
-	ID   uint32
-	Role pb.Role
-}
-
-type LoginUserData struct {
-	ID       uint32 `db:"email"`
-	Email    string `db:"email"`
-	Password string `db:"password"`
+	ID         uint32 `db:"id"`
+	Email      string `db:"email"`
+	FirstName  string `db:"first_name"`
+	SecondName string `db:"second_name"`
+	Patronymic string `db:"patronymic"`
+	Password   string `db:"password"`
+	Role       string `db:"role"`
 }
 
 func getSqlTimeout() (time.Duration, error) {
@@ -53,21 +46,30 @@ func getSqlTimeout() (time.Duration, error) {
 	return timeout, nil
 }
 
-func CreateTable() error {
+func connectToDb() (context.Context, func(), *sqlx.DB, error) {
 
 	db, err := sqlx.Connect("pgx", os.Getenv("DSN"))
 	if err != nil {
-		return fmt.Errorf("creating table: %w: %v", ErrConDB, err)
+		return nil, nil, nil, fmt.Errorf("creating user: connection to db: %w", err)
 	}
-	defer db.Close()
 
 	timeout, err := getSqlTimeout()
 	if err != nil {
-		return fmt.Errorf("creating table: %w", err)
+		return nil, nil, nil, fmt.Errorf("creating user: %w", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	return ctx, cancel, db, nil
+}
+
+func CreateTable() error {
+
+	ctx, cancel, db, err := connectToDb()
+	if err != nil {
+		return err
+	}
 	defer cancel()
+	defer db.Close()
 
 	query := `CREATE TABLE IF NOT EXISTS users (
 		id SERIAL PRIMARY KEY,
@@ -90,19 +92,12 @@ func CreateTable() error {
 
 func DeleteTable() error {
 
-	db, err := sqlx.Connect("pgx", os.Getenv("DSN"))
+	ctx, cancel, db, err := connectToDb()
 	if err != nil {
-		return fmt.Errorf("deleting table: connection to db: %w: %v", ErrConDB, err)
+		return err
 	}
-	defer db.Close()
-
-	timeout, err := getSqlTimeout()
-	if err != nil {
-		return fmt.Errorf("deleting table: %w", err)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
+	defer db.Close()
 
 	_, err = db.ExecContext(ctx, `DROP TABLE IF EXISTS users;`)
 	if err != nil {
@@ -111,22 +106,22 @@ func DeleteTable() error {
 	return nil
 }
 
-func CreateUser(user User) (SignUpResponse, error) {
+func CreateUser(user User) (User, error) {
 
-	var res SignUpResponse
-	db, err := sqlx.Connect("pgx", os.Getenv("DSN"))
+	var res User
+	ctx, cancel, db, err := connectToDb()
 	if err != nil {
-		return res, fmt.Errorf("creating user: connection to db: %w", err)
+		return res, err
 	}
+	defer cancel()
 	defer db.Close()
 
-	timeout, err := getSqlTimeout()
-	if err != nil {
-		return res, fmt.Errorf("creating user: %w", err)
+	if _, err = GetUserByEmail(user.Email); !errors.Is(err, ErrNotFound) {
+		if err != nil {
+			return res, fmt.Errorf("creating user: email existence verification error: %w", err)
+		}
+		return res, fmt.Errorf("%w: user with the email %s already exists", ErrBadRequest, user.Email)
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
 
 	var id uint32
 	role := pb.Role_USER
@@ -137,8 +132,7 @@ func CreateUser(user User) (SignUpResponse, error) {
 			return res, fmt.Errorf("creating user: select error: %w", err)
 		}
 	}
-	user.Role = role
-	res.Role = role
+	user.Role = role.String()
 
 	queryInsert := `INSERT INTO users (email, first_name, second_name, patronymic, password, role) 
 		VALUES (:email, :first_name, :second_name, :patronymic, :password, :role);`
@@ -146,88 +140,99 @@ func CreateUser(user User) (SignUpResponse, error) {
 		return res, fmt.Errorf("creating user: insert error: %w", err)
 	}
 
-	if err := db.GetContext(ctx, &id, `SELECT id FROM users WHERE email = $1`, user.Email); err != nil {
-		return res, fmt.Errorf("creating user: get id error: %w", err)
+	res, err = GetUserByEmail(user.Email)
+	if err != nil {
+		return res, fmt.Errorf("creating user: %w", err)
 	}
-	res.ID = id
 
 	return res, nil
 }
 
-func GetUserByEmail(email string) (LoginUserData, error) {
+func GetUserByEmail(email string) (User, error) {
 
-	var out LoginUserData
-	db, err := sqlx.Connect("pgx", os.Getenv("DSN"))
+	var res User
+	ctx, cancel, db, err := connectToDb()
 	if err != nil {
-		return out, fmt.Errorf("getting user by email: connection to db: %w", err)
+		return res, err
 	}
+	defer cancel()
 	defer db.Close()
 
-	timeout, err := getSqlTimeout()
-	if err != nil {
-		return out, fmt.Errorf("getting user by email: %w", err)
+	query := `SELECT * FROM users WHERE email = $1;`
+	if err := db.GetContext(ctx, &res, query, email); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return res, fmt.Errorf("%w: user with the email %s doesn't exist", ErrNotFound, email)
+		}
+		return res, fmt.Errorf("getting user by email: select error: %w", err)
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	query := `SELECT id, email, password FROM users WHERE email = $1;`
-	if err := db.GetContext(ctx, &out, query, email); err != nil {
-		return out, fmt.Errorf("getting user by email: select error: %w", err)
-	}
-	return out, nil
+	return res, nil
 }
 
-func UpdateUser(oldEmail string, user User) error {
+func GetUserById(id uint32) (User, error) {
 
-	res, err := GetUserByEmail(oldEmail)
+	var res User
+	ctx, cancel, db, err := connectToDb()
 	if err != nil {
-		return fmt.Errorf("updating user: %w", err)
+		return res, err
 	}
-	user.ID = res.ID
-
-	db, err := sqlx.Connect("pgx", os.Getenv("DSN"))
-	if err != nil {
-		return fmt.Errorf("getting user by email: connection to db: %w", err)
-	}
+	defer cancel()
 	defer db.Close()
 
-	timeout, err := getSqlTimeout()
-	if err != nil {
-		return fmt.Errorf("getting user by email: %w", err)
+	query := `SELECT * FROM users WHERE id = $1;`
+	if err := db.GetContext(ctx, &res, query, id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return res, fmt.Errorf("%w: user with the id %d doesn't exist", ErrNotFound, id)
+		}
+		return res, fmt.Errorf("getting user by id: select error: %w", err)
 	}
+	return res, nil
+}
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+func UpdateUser(oldEmail string, user User) (User, error) {
+
+	var res User
+	ctx, cancel, db, err := connectToDb()
+	if err != nil {
+		return res, err
+	}
 	defer cancel()
+	defer db.Close()
+
+	res, err = GetUserByEmail(oldEmail)
+	if err != nil {
+		return res, fmt.Errorf("updating user: %w", err)
+	}
+	user.ID = res.ID
 
 	query := `UPDATE users 
 		SET email = :email, first_name := first_name, second_name := second_name, 
 		patronymic := patronymic, password := password WHERE id := id`
 
 	if _, err := db.NamedExecContext(ctx, query, &user); err != nil {
-		return fmt.Errorf("updating user: update error: %w", err)
+		return res, fmt.Errorf("updating user: update error: %w", err)
 	}
 
-	return nil
+	query = `SELECT * FROM users WHERE email = $1;`
+	if err := db.GetContext(ctx, &res, query, user.Email); err != nil {
+		return res, fmt.Errorf("getting user by email: select error: %w", err)
+	}
+	return res, nil
+
 }
 
 func DeleteUser(email string) error {
 
-	db, err := sqlx.Connect("pgx", os.Getenv("DSN"))
+	ctx, cancel, db, err := connectToDb()
 	if err != nil {
-		return fmt.Errorf("deleting user: connection to db: %w", err)
+		return err
 	}
+	defer cancel()
 	defer db.Close()
 
-	timeout, err := getSqlTimeout()
-	if err != nil {
-		return fmt.Errorf("deleting user: %w", err)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
 	if _, err := db.ExecContext(ctx, `DELETE FROM users WHERE email = $1`, email); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("%w: user with the email %s doesn't exist", ErrNotFound, email)
+		}
 		return fmt.Errorf("deleting user: db error: %w", err)
 	}
 	return nil

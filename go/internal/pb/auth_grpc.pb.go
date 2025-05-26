@@ -19,20 +19,22 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Authentication_SignUpUser_FullMethodName = "/Authentication/SignUpUser"
-	Authentication_LogInUser_FullMethodName  = "/Authentication/LogInUser"
-	Authentication_UpdateUser_FullMethodName = "/Authentication/UpdateUser"
-	Authentication_DeleteUser_FullMethodName = "/Authentication/DeleteUser"
+	Authentication_SignupUser_FullMethodName     = "/Authentication/SignupUser"
+	Authentication_GetUserByEmail_FullMethodName = "/Authentication/GetUserByEmail"
+	Authentication_GetUserById_FullMethodName    = "/Authentication/GetUserById"
+	Authentication_UpdateUser_FullMethodName     = "/Authentication/UpdateUser"
+	Authentication_DeleteUser_FullMethodName     = "/Authentication/DeleteUser"
 )
 
 // AuthenticationClient is the client API for Authentication service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthenticationClient interface {
-	SignUpUser(ctx context.Context, in *SignUpRequest, opts ...grpc.CallOption) (*SignUpResponse, error)
-	LogInUser(ctx context.Context, in *EmailPassword, opts ...grpc.CallOption) (*AuthHeader, error)
-	UpdateUser(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*AuthHeader, error)
-	DeleteUser(ctx context.Context, in *EmailPassword, opts ...grpc.CallOption) (*Empty, error)
+	SignupUser(ctx context.Context, in *SignupRequest, opts ...grpc.CallOption) (*UserResponse, error)
+	GetUserByEmail(ctx context.Context, in *Email, opts ...grpc.CallOption) (*UserResponse, error)
+	GetUserById(ctx context.Context, in *Id, opts ...grpc.CallOption) (*UserResponse, error)
+	UpdateUser(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UserResponse, error)
+	DeleteUser(ctx context.Context, in *Email, opts ...grpc.CallOption) (*Empty, error)
 }
 
 type authenticationClient struct {
@@ -43,29 +45,39 @@ func NewAuthenticationClient(cc grpc.ClientConnInterface) AuthenticationClient {
 	return &authenticationClient{cc}
 }
 
-func (c *authenticationClient) SignUpUser(ctx context.Context, in *SignUpRequest, opts ...grpc.CallOption) (*SignUpResponse, error) {
+func (c *authenticationClient) SignupUser(ctx context.Context, in *SignupRequest, opts ...grpc.CallOption) (*UserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SignUpResponse)
-	err := c.cc.Invoke(ctx, Authentication_SignUpUser_FullMethodName, in, out, cOpts...)
+	out := new(UserResponse)
+	err := c.cc.Invoke(ctx, Authentication_SignupUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *authenticationClient) LogInUser(ctx context.Context, in *EmailPassword, opts ...grpc.CallOption) (*AuthHeader, error) {
+func (c *authenticationClient) GetUserByEmail(ctx context.Context, in *Email, opts ...grpc.CallOption) (*UserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AuthHeader)
-	err := c.cc.Invoke(ctx, Authentication_LogInUser_FullMethodName, in, out, cOpts...)
+	out := new(UserResponse)
+	err := c.cc.Invoke(ctx, Authentication_GetUserByEmail_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *authenticationClient) UpdateUser(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*AuthHeader, error) {
+func (c *authenticationClient) GetUserById(ctx context.Context, in *Id, opts ...grpc.CallOption) (*UserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AuthHeader)
+	out := new(UserResponse)
+	err := c.cc.Invoke(ctx, Authentication_GetUserById_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authenticationClient) UpdateUser(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UserResponse)
 	err := c.cc.Invoke(ctx, Authentication_UpdateUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -73,7 +85,7 @@ func (c *authenticationClient) UpdateUser(ctx context.Context, in *UpdateRequest
 	return out, nil
 }
 
-func (c *authenticationClient) DeleteUser(ctx context.Context, in *EmailPassword, opts ...grpc.CallOption) (*Empty, error) {
+func (c *authenticationClient) DeleteUser(ctx context.Context, in *Email, opts ...grpc.CallOption) (*Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Empty)
 	err := c.cc.Invoke(ctx, Authentication_DeleteUser_FullMethodName, in, out, cOpts...)
@@ -87,10 +99,11 @@ func (c *authenticationClient) DeleteUser(ctx context.Context, in *EmailPassword
 // All implementations must embed UnimplementedAuthenticationServer
 // for forward compatibility.
 type AuthenticationServer interface {
-	SignUpUser(context.Context, *SignUpRequest) (*SignUpResponse, error)
-	LogInUser(context.Context, *EmailPassword) (*AuthHeader, error)
-	UpdateUser(context.Context, *UpdateRequest) (*AuthHeader, error)
-	DeleteUser(context.Context, *EmailPassword) (*Empty, error)
+	SignupUser(context.Context, *SignupRequest) (*UserResponse, error)
+	GetUserByEmail(context.Context, *Email) (*UserResponse, error)
+	GetUserById(context.Context, *Id) (*UserResponse, error)
+	UpdateUser(context.Context, *UpdateRequest) (*UserResponse, error)
+	DeleteUser(context.Context, *Email) (*Empty, error)
 	mustEmbedUnimplementedAuthenticationServer()
 }
 
@@ -101,16 +114,19 @@ type AuthenticationServer interface {
 // pointer dereference when methods are called.
 type UnimplementedAuthenticationServer struct{}
 
-func (UnimplementedAuthenticationServer) SignUpUser(context.Context, *SignUpRequest) (*SignUpResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SignUpUser not implemented")
+func (UnimplementedAuthenticationServer) SignupUser(context.Context, *SignupRequest) (*UserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SignupUser not implemented")
 }
-func (UnimplementedAuthenticationServer) LogInUser(context.Context, *EmailPassword) (*AuthHeader, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method LogInUser not implemented")
+func (UnimplementedAuthenticationServer) GetUserByEmail(context.Context, *Email) (*UserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserByEmail not implemented")
 }
-func (UnimplementedAuthenticationServer) UpdateUser(context.Context, *UpdateRequest) (*AuthHeader, error) {
+func (UnimplementedAuthenticationServer) GetUserById(context.Context, *Id) (*UserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserById not implemented")
+}
+func (UnimplementedAuthenticationServer) UpdateUser(context.Context, *UpdateRequest) (*UserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateUser not implemented")
 }
-func (UnimplementedAuthenticationServer) DeleteUser(context.Context, *EmailPassword) (*Empty, error) {
+func (UnimplementedAuthenticationServer) DeleteUser(context.Context, *Email) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteUser not implemented")
 }
 func (UnimplementedAuthenticationServer) mustEmbedUnimplementedAuthenticationServer() {}
@@ -134,38 +150,56 @@ func RegisterAuthenticationServer(s grpc.ServiceRegistrar, srv AuthenticationSer
 	s.RegisterService(&Authentication_ServiceDesc, srv)
 }
 
-func _Authentication_SignUpUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SignUpRequest)
+func _Authentication_SignupUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SignupRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AuthenticationServer).SignUpUser(ctx, in)
+		return srv.(AuthenticationServer).SignupUser(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Authentication_SignUpUser_FullMethodName,
+		FullMethod: Authentication_SignupUser_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthenticationServer).SignUpUser(ctx, req.(*SignUpRequest))
+		return srv.(AuthenticationServer).SignupUser(ctx, req.(*SignupRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Authentication_LogInUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EmailPassword)
+func _Authentication_GetUserByEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Email)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AuthenticationServer).LogInUser(ctx, in)
+		return srv.(AuthenticationServer).GetUserByEmail(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Authentication_LogInUser_FullMethodName,
+		FullMethod: Authentication_GetUserByEmail_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthenticationServer).LogInUser(ctx, req.(*EmailPassword))
+		return srv.(AuthenticationServer).GetUserByEmail(ctx, req.(*Email))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Authentication_GetUserById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Id)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthenticationServer).GetUserById(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Authentication_GetUserById_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthenticationServer).GetUserById(ctx, req.(*Id))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -189,7 +223,7 @@ func _Authentication_UpdateUser_Handler(srv interface{}, ctx context.Context, de
 }
 
 func _Authentication_DeleteUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EmailPassword)
+	in := new(Email)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -201,7 +235,7 @@ func _Authentication_DeleteUser_Handler(srv interface{}, ctx context.Context, de
 		FullMethod: Authentication_DeleteUser_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthenticationServer).DeleteUser(ctx, req.(*EmailPassword))
+		return srv.(AuthenticationServer).DeleteUser(ctx, req.(*Email))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -214,12 +248,16 @@ var Authentication_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*AuthenticationServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "SignUpUser",
-			Handler:    _Authentication_SignUpUser_Handler,
+			MethodName: "SignupUser",
+			Handler:    _Authentication_SignupUser_Handler,
 		},
 		{
-			MethodName: "LogInUser",
-			Handler:    _Authentication_LogInUser_Handler,
+			MethodName: "GetUserByEmail",
+			Handler:    _Authentication_GetUserByEmail_Handler,
+		},
+		{
+			MethodName: "GetUserById",
+			Handler:    _Authentication_GetUserById_Handler,
 		},
 		{
 			MethodName: "UpdateUser",

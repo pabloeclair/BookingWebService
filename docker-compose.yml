@@ -11,16 +11,32 @@ services:
     volumes:
       - postgres_data:/data
 
-  booking_service:
-    build: .
-    container_name: booking_service
+  grpc:
+    build: 
+      context: .
+      target: grpc
+    container_name: grpc
     environment:
       - DSN=${DSN}
       - SQL_TIMEOUT=${SQL_TIMEOUT}
     ports:
-      - "5050:5050"
+      - "7676:7676"
     depends_on:
       - db
+  
+  booking_service:
+    build: 
+      context: .
+      target: web
+    container_name: booking_service
+    environment:
+      - JAVA_SOURCE=${JAVA_SOURCE}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - grpc
 
   frontend:
     build: ./frontend
