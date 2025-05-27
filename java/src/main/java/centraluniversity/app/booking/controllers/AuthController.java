@@ -29,10 +29,11 @@ public class AuthController {
     }   
 
     @GetMapping()
-    public UserResponseDto getUserByEmail(@RequestParam String email) throws Exception {
-        return authService.getUserByEmail(email);
+    public UserResponseDto getUserByEmail(@RequestParam String email, @RequestParam String password) throws Exception {
+        return authService.getUserByEmail(email, password);
     }
 
+    // TODO: update for admin 
     @GetMapping("/{id}")
     public UserResponseDto getUserById(@PathVariable int id) throws Exception {
         return authService.getUserById(id);

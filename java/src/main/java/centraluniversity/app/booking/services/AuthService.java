@@ -95,9 +95,9 @@ public class AuthService {
      * @return UserResponseDto - full user information
      * @throws Exception
      */
-    public UserResponseDto getUserByEmail(String email) throws Exception {
+    public UserResponseDto getUserByEmail(String email, String password) throws Exception {
 
-        Email req = Email.newBuilder().setEmail(email).build();
+        Email req = Email.newBuilder().setEmail(email).setPassword(password).build();
         UserResponse res;
         try {
             res = this.stub.getUserByEmail(req);
@@ -122,7 +122,7 @@ public class AuthService {
         ); 
     }
 
-    // TODO: correct getbyid
+    // TODO: update for admin
     /**
      * Get user by id
      * @param id
