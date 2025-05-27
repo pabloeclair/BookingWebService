@@ -10,7 +10,7 @@ function App() {
     return (
         <BrowserRouter>
             <AuthProvider>
-                <img src={"../resources/Central_University_full.png"}
+                <img src={"/Central_University_full.png"}
                      id={"logo"} alt={"Логотип Центрального университета"} key={"cu_logo"}/>
                 <Routes>
                     <Route path={"/login"} element={<LoginPage/>}/>
