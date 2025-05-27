@@ -24,41 +24,14 @@ function LoginPage() {
         <div id={"root-container"}>
             <h1>Авторизация</h1>
             <span className={"text-gray"}>Нет аккаунта?</span>
-            <Link to={"../user/signup"} className={"text-link"}>Зарегистрироваться</Link>
+            <Link to={"../signup"} className={"text-link"}>Зарегистрироваться</Link>
             <br/><br/>
             <LoginForm />
         </div>
     );
 }
 
-function LoginForm() {
-
-    const [form, setForm] = useState({
-        email: '',
-        password: ''
-    });
-    const login = useContext(AuthContext).login;
-
-    const handleSubmit = (event) => {
-        event.preventDefault();
-        console.log('Регистрация:', form);
-        const email = form.email;
-        fetch("http://localhost:5173/users?email="+email)
-            .then((response) => {
-                const res = response.json();
-                return res;
-            })
-            .catch((error) => error);
-    };
-
-    const handleChange = (event) => {
-        const {name, value} = event.target;
-        setForm(prevForm => ({
-            ...prevForm,
-            [name]: value
-        }));
-    };
-
+function htmlForm(form, handleChange, handleSubmit) {
     return (
         <form onSubmit={handleSubmit}>
             <div className={"form-container"}>
@@ -91,6 +64,45 @@ function LoginForm() {
             <button className={"form-button"} type={"submit"}>Войти</button>
         </form>
     );
+}
+
+function LoginForm() {
+
+    const [form, setForm] = useState({
+        email: '',
+        password: ''
+    });
+    const login = useContext(AuthContext).login;
+
+    const handleSubmit = (event) => {
+        event.preventDefault();
+        console.log('Регистрация:', form);
+
+        const email = form.email;
+        const password = form.password;
+
+        fetch("http://localhost:8080/users?email="+email+"&password="+password)
+            .then((response) => {
+                if (!response.ok) {
+                    throw Error(response.json().errorCode)
+                }
+                const res = response.json();
+                return res;
+            }).then((data) => {
+                login(data)
+            })
+            .catch((error) => error);
+    };
+
+    const handleChange = (event) => {
+        const {name, value} = event.target;
+        setForm(prevForm => ({
+            ...prevForm,
+            [name]: value
+        }));
+    };
+
+    return htmlForm(form, handleChange, handleSubmit);
 }
 
 
