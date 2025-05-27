@@ -11,6 +11,10 @@
     margin-right: 20px;
 }
 
+.text-error {
+    color: #ff3333;
+}
+
 .text-link {
     color: #3a64cc;
     font-weight: 500;

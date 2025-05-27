@@ -68,30 +68,31 @@ function htmlForm(form, handleChange, handleSubmit) {
 
 function LoginForm() {
 
+    const [error, setError] = useState(null);
     const [form, setForm] = useState({
         email: '',
         password: ''
     });
     const login = useContext(AuthContext).login;
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
         console.log('Регистрация:', form);
 
         const email = form.email;
         const password = form.password;
 
-        fetch("http://localhost:8080/users?email="+email+"&password="+password)
-            .then((response) => {
-                if (!response.ok) {
-                    throw Error(response.json().errorCode)
-                }
-                const res = response.json();
-                return res;
-            }).then((data) => {
-                login(data)
-            })
-            .catch((error) => error);
+        try {
+            const response = await fetch("http://localhost:8080/users?email="+email+"&password="+password);
+            const data = await response.json();
+            if (!response.ok) {
+                    throw new Error(data.errorCode);
+            }
+            login(data);
+            setError(null);
+        } catch (err) {
+            setError(err);
+        }
     };
 
     const handleChange = (event) => {
@@ -102,8 +103,43 @@ function LoginForm() {
         }));
     };
 
-    return htmlForm(form, handleChange, handleSubmit);
+    if (error) {
+        return (
+            <div>
+                {htmlForm(form, handleChange, handleSubmit)}
+                <br/>
+                {handleError(error)}
+            </div>
+        );
+    }
+    return (
+        <div>
+            {htmlForm(form, handleChange, handleSubmit)}
+        </div>
+    );
 }
 
+function handleError(error) {
+    if (error.message === "404 NOT_FOUND") {
+        return (
+            <div className={"text-error"}>
+                Аккаунта с указанной почтой не существует<br/>Пожалуйста, зарегистрируйтесь
+            </div>
+            
+        );
+    } else if (error.message === "401 UNAUTHORIZED") {
+        return (
+            <div className={"text-error"}>
+                Неверный пароль
+            </div>
+        );
+    } else {
+        return (
+            <div className={"text-error"}>
+                Произошла серверная ошибка<br/>Пожалуйста, обновите страницу или обратитесь на ресепшен на 4 этаже
+            </div>
+        );
+    }
+}
 
 export default LoginPage;
