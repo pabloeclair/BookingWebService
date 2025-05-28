@@ -1,5 +1,5 @@
 import './Auth.css'
-import {Link, Navigate, useNavigate} from 'react-router';
+import {Link, useNavigate} from 'react-router';
 import {useContext, useState} from "react";
 import AuthContext from "./AuthContext.jsx";
 
@@ -81,9 +81,10 @@ function LoginForm() {
 
         const email = form.email;
         const password = form.password;
+        const http = `http://localhost:8080/users?email=${email}&password=${password}`
 
         try {
-            const response = await fetch("http://localhost:8080/users?email="+email+"&password="+password);
+            const response = await fetch(http);
             const data = await response.json();
             if (!response.ok) {
                     throw new Error(data.errorCode);
@@ -108,7 +109,9 @@ function LoginForm() {
             <div>
                 {htmlForm(form, handleChange, handleSubmit)}
                 <br/>
-                {handleError(error)}
+                <div className={"text-error"}>
+                    <HandleError error={error}/>
+                </div>
             </div>
         );
     }
@@ -119,26 +122,13 @@ function LoginForm() {
     );
 }
 
-function handleError(error) {
+function HandleError({ error }) {
     if (error.message === "404 NOT_FOUND") {
-        return (
-            <div className={"text-error"}>
-                Аккаунта с указанной почтой не существует<br/>Пожалуйста, зарегистрируйтесь
-            </div>
-            
-        );
+        return <>Аккаунта с указанной почтой не существует<br/>Пожалуйста, зарегистрируйтесь</>;
     } else if (error.message === "401 UNAUTHORIZED") {
-        return (
-            <div className={"text-error"}>
-                Неверный пароль
-            </div>
-        );
+        return <>Неверный пароль</>;
     } else {
-        return (
-            <div className={"text-error"}>
-                Произошла серверная ошибка<br/>Пожалуйста, обновите страницу или обратитесь на ресепшен на 4 этаже
-            </div>
-        );
+        return <>Произошла серверная ошибка<br/>Пожалуйста, обновите страницу или обратитесь на ресепшен на 4 этаже</>;
     }
 }
 
