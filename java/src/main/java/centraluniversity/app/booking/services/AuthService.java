@@ -72,9 +72,7 @@ public class AuthService {
             Status status = e.getStatus();
             if (status.getCode() == Status.Code.ALREADY_EXISTS) {
                 throw new HttpStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-            } else if (status.getCode() == Status.Code.UNAUTHENTICATED) {
-                throw new HttpStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
-            }
+            } 
             throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         } 
         
