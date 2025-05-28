@@ -31,7 +31,7 @@ function LoginPage() {
     );
 }
 
-function htmlForm(form, handleChange, handleSubmit) {
+function HtmlForm({ form, handleChange, handleSubmit }) {
     return (
         <form onSubmit={handleSubmit}>
             <div className={"form-container"}>
@@ -106,30 +106,23 @@ function LoginForm() {
 
     if (error) {
         return (
-            <div>
-                {htmlForm(form, handleChange, handleSubmit)}
+            <>
+                <HtmlForm form={form} handleChange={handleChange} handleSubmit={handleSubmit} />
                 <br/>
                 <div className={"text-error"}>
                     <HandleError error={error}/>
                 </div>
-            </div>
+            </>
         );
     }
-    return (
-        <div>
-            {htmlForm(form, handleChange, handleSubmit)}
-        </div>
-    );
+    return <HtmlForm form={form} handleChange={handleChange} handleSubmit={handleSubmit} />;
 }
 
 function HandleError({ error }) {
     if (error.message === "404 NOT_FOUND") {
         return <>Аккаунта с указанной почтой не существует<br/>Пожалуйста, зарегистрируйтесь</>;
-    } else if (error.message === "401 UNAUTHORIZED") {
-        return <>Неверный пароль</>;
-    } else {
-        return <>Произошла серверная ошибка<br/>Пожалуйста, обновите страницу или обратитесь на ресепшен на 4 этаже</>;
-    }
+    } 
+    return <>Произошла серверная ошибка<br/>Пожалуйста, обновите страницу или обратитесь на ресепшен на 4 этаже</>;
 }
 
 export default LoginPage;
