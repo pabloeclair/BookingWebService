@@ -8,6 +8,7 @@ function LoginPage() {
     const user = useContext(AuthContext).user;
     const logout = useContext(AuthContext).logout;
     const navigate = useNavigate();
+    const [error, setError] = useState(null);
 
     if (user) {
         return (
@@ -21,54 +22,21 @@ function LoginPage() {
     }
 
     return (
-        <div id={"root-container"}>
+        <>
+        <div className={'form-container'}>
             <h1>Авторизация</h1>
             <span className={"text-gray"}>Нет аккаунта?</span>
             <Link to={"../signup"} className={"text-link"}>Зарегистрироваться</Link>
             <br/><br/>
-            <LoginForm />
+            <LoginForm setError={setError}/>
         </div>
+        <Error error={error}/>
+        </>
     );
 }
 
-function HtmlForm({ form, handleChange, handleSubmit }) {
-    return (
-        <form onSubmit={handleSubmit}>
-            <div className={"form-container"}>
-                <label>
-                    E-mail<br/>
-                    <input className={"form-field"}
-                        type={"email"}
-                        name={"email"}
-                        placeholder={"mail@example.ru"}
-                        value={form.email}
-                        onChange={handleChange}
-                        required={true}
-                    />
-                </label>
-            </div>
-            <div className={"form-container"}>
-                <label>
-                    Пароль<br/>
-                    <input
-                        className={"form-field"}
-                        type={"password"}
-                        name={"password"}
-                        value={form.password}
-                        onChange={handleChange}
-                        required={true}
-                    />
-                </label>
-            </div>
-            <br/>
-            <button className={"form-button"} type={"submit"}>Войти</button>
-        </form>
-    );
-}
+function LoginForm({ setError }) {
 
-function LoginForm() {
-
-    const [error, setError] = useState(null);
     const [form, setForm] = useState({
         email: '',
         password: ''
@@ -104,25 +72,41 @@ function LoginForm() {
         }));
     };
 
-    if (error) {
-        return (
-            <>
-                <HtmlForm form={form} handleChange={handleChange} handleSubmit={handleSubmit} />
-                <br/>
-                <div className={"text-error"}>
-                    <HandleError error={error}/>
-                </div>
-            </>
-        );
-    }
-    return <HtmlForm form={form} handleChange={handleChange} handleSubmit={handleSubmit} />;
+    return (
+        <form onSubmit={handleSubmit}>
+            <label>E-mail<br/>
+                <input className={"form-field"}
+                    type={"email"}
+                    name={"email"}
+                    placeholder={"mail@example.ru"}
+                    value={form.email}
+                    onChange={handleChange}
+                    required={true}
+                />
+            </label>
+            <br/>
+            <label>Пароль<br/>
+                <input className={"form-field"}
+                    type={"password"}
+                    name={"password"}
+                    value={form.password}
+                    onChange={handleChange}
+                    required={true}
+                />
+            </label>
+            <br/>
+            <button className={"form-button"} type={"submit"}>Войти</button>
+        </form>
+    );
 }
 
-function HandleError({ error }) {
-    if (error.message === "404 NOT_FOUND") {
-        return <>Аккаунта с указанной почтой не существует<br/>Пожалуйста, зарегистрируйтесь</>;
+function Error({ error }) {
+    if (error == null) {
+        return;
+    } else if (error.message === "404 NOT_FOUND") {
+        return <div className={'modal error'}>Аккаунта с указанной почтой не существует<br/>Пожалуйста, зарегистрируйтесь</div>;
     } 
-    return <>Произошла серверная ошибка<br/>Пожалуйста, обновите страницу или обратитесь на ресепшен на 4 этаже</>;
+    return <div className={'modal error'}>Произошла серверная ошибка<br/>Пожалуйста, обновите страницу или<br/>обратитесь на ресепшен на 4 этаже</div>;
 }
 
 export default LoginPage;
