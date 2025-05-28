@@ -154,4 +154,5 @@ function HtmlForm({ form, handleChange, handleSubmit }) {
     );
 }
 
+
 export default SignupPage;
