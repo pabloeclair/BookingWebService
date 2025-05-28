@@ -1,18 +1,10 @@
-#root-container {
-    position: absolute;
-    left: 50%;
-    transform: translate(-50%);
-    width: 600px;
-    height: 700px;
+body {
+    font: 18px "Inter";
 }
 
 .text-gray {
     color: #4d4d4d;
     margin-right: 20px;
-}
-
-.text-error {
-    color: #ff3333;
 }
 
 .text-link {
@@ -22,17 +14,25 @@
 }
 
 .form-container {
-    font-size: 15px;
-    color: #535353;
-    margin-top: 20px;
     font-weight: 500;
+    margin-left: 40px;
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%);
+    width: 50%;
+}
+
+label {
+    color: #535353;
+    font-size: 15px;
 }
 
 .form-field {
     outline: none;
     margin-top: 5px;
+    margin-bottom: 10px;
     height: 15px;
-    width: 90%;
+    width: 70%;
     border: 1px solid #cacaca;
     border-radius: 10px;
     padding: 17px;
@@ -70,4 +70,22 @@ input:focus:invalid {
 
 .form-button:hover {
     background: #5f91ff;
+}
+
+.modal {
+    position: fixed;
+    width: auto;
+    right: 40px;
+    top: 30px;
+    border-radius: 8px;
+    padding: 15px;
+    font-size: 10px;
+}
+
+.error {
+    background: #ffb3be;
+}
+
+.ok {
+    background: #bcf5bc;
 }
