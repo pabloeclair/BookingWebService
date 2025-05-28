@@ -3,21 +3,25 @@ import {Link} from 'react-router';
 import {useState} from "react";
 
 function SignupPage() {
+    const [error, setError] = useState(null);
+    const [user, setUser] = useState(false);
 
     return (
-        <div id={"root-container"}>
+        <>
+        <div className={'form-container'}>
             <h1>Регистрация</h1>
             <span className={"text-gray"}>Уже есть аккаунт?</span>
             <Link to={"../login"} className={"text-link"}>Войти</Link>
             <br/><br/>
-            <SignupForm />
+            <SignupForm setUser={setUser} setError={setError}/>
         </div>
+        <Modal user={user} error={error} />
+        </>
     );
 }
 
-function SignupForm() {
+function SignupForm({ setUser, setError }) {
 
-    const [error, setError] = useState(null);
     const [form, setForm] = useState({
         first_name: '',
         second_name: '',
@@ -45,8 +49,10 @@ function SignupForm() {
                     throw new Error(data.errorCode);
             }
             setError(null);
+            setUser(true)
         } catch (err) {
-            setError(err);
+            setError(err.message);
+            setUser(false);
         }
     };
 
@@ -58,100 +64,78 @@ function SignupForm() {
         }));
     };
 
-    if (error) {
-        return (
-            <>
-                <HtmlForm form={form} handleChange={handleChange} handleSubmit={handleSubmit} />
-                <br/>
-                <div className={"text-error"}>
-                    <HandleError error={error}/>
-                </div>
-            </>
-        );
-    }
-    return <HtmlForm form={form} handleChange={handleChange} handleSubmit={handleSubmit} />;
-}
-
-function HandleError({ error }) {
-    switch (error.message) {
-        case '400 BAD_REQUEST':
-            return <>Аккаунт с указанной почтой уже существует</>;
-        default:
-            return <>Произошла серверная ошибка<br/>Пожалуйста, обновите страницу или обратитесь на ресепшен на 4 этаже</>;
-    }
-}
-
-function HtmlForm({ form, handleChange, handleSubmit }) {
     return (
         <form onSubmit={handleSubmit}>
-            <div className={"form-container"}>
-                <label>
-                    Имя<br/>
-                    <input className={"form-field"}
-                            type={"text"}
-                            name={"first_name"}
-                            placeholder={"Иван"}
-                            value={form.first_name}
-                            onChange={handleChange}
-                            required={true}
-                    />
-                </label>
-            </div>
-            <div className={"form-container"}>
-                <label>
-                    Фамилия<br/>
-                    <input className={"form-field"}
-                            type={"text"}
-                            name={"second_name"}
-                            placeholder={"Иванов"}
-                            value={form.second_name}
-                            onChange={handleChange}
-                            required={true}
-                    />
-                </label>
-            </div>
-            <div className={"form-container"}>
-                <label>
-                    Отчество<br/>
-                    <input className={"form-field"}
-                            type={"text"}
-                            name={"patronymic"}
-                            placeholder={"Иванович"}
-                            value={form.patronymic}
-                            onChange={handleChange}
-                            required={false}
-                    />
-                </label>
-            </div>
-            <div className={"form-container"}>
-                <label>
-                    E-mail<br/>
-                    <input className={"form-field"}
-                            type={"email"}
-                            name={"email"}
-                            placeholder={"mail@example.ru"}
-                            value={form.email}
-                            onChange={handleChange}
-                            required={true}
-                    />
-                </label>
-            </div>
-            <div className={"form-container"}>
-                <label>
-                    Пароль<br/>
-                    <input className={"form-field"}
-                            type={"password"}
-                            name={"password"}
-                            value={form.password}
-                            onChange={handleChange}
-                            required={true}
-                    />
-                </label>
-            </div>
+            <label>Имя<br/>
+                <input className={"form-field"}
+                    type={"text"}
+                    name={"first_name"}
+                    placeholder={"Иван"}
+                    value={form.first_name}
+                    onChange={handleChange}
+                    required={true}
+                />
+            </label>
+            <br/>
+            <label>Фамилия<br/>
+                <input className={"form-field"}
+                    type={"text"}
+                    name={"second_name"}
+                    placeholder={"Иванов"}
+                    value={form.second_name}
+                    onChange={handleChange}
+                    required={true}
+                />
+            </label>
+            <br/>
+            <label>Отчество<br/>
+                <input className={"form-field"}
+                    type={"text"}
+                    name={"patronymic"}
+                    placeholder={"Иванович"}
+                    value={form.patronymic}
+                    onChange={handleChange}
+                    required={false}
+                />
+            </label>
+            <br/>
+            <label>E-mail<br/>
+                <input className={"form-field"}
+                    type={"email"}
+                    name={"email"}
+                    placeholder={"mail@example.ru"}
+                    value={form.email}
+                    onChange={handleChange}
+                    required={true}
+                />
+            </label>
+            <br/>
+            <label>Пароль<br/>
+                <input className={"form-field"}
+                        type={"password"}
+                        name={"password"}
+                        value={form.password}
+                        onChange={handleChange}
+                        required={true}
+                />
+            </label>
             <br/>
             <button className={"form-button"} type={"submit"}>Войти</button>
         </form>
     );
+}
+
+function Modal({ user, error }) {
+    if (user) {
+        return <div className={'modal ok'}>Регистрация прошла успешна<br/>Перейдите на страницу авторизации</div>;
+    }
+    if (!error) return null;
+    switch (error) {
+        case '400 BAD_REQUEST':
+            return <div className={'modal error'}>Аккаунт с указанной почтой уже существует</div>;
+        default:
+            return <div className={'modal error'}>Произошла серверная ошибка<br/>Пожалуйста, обновите страницу или обратитесь на ресепшен на 4 этаже</div>;
+    }
 }
 
 

@@ -21,6 +21,20 @@ function LoginPage() {
         );
     }
 
+    if (!error) {
+        return (
+        <>
+        <div className={'form-container'}>
+            <h1>Авторизация</h1>
+            <span className={"text-gray"}>Нет аккаунта?</span>
+            <Link to={"../signup"} className={"text-link"}>Зарегистрироваться</Link>
+            <br/><br/>
+            <LoginForm setError={setError}/>
+        </div>
+        </>
+    );
+    }
+
     return (
         <>
         <div className={'form-container'}>
@@ -30,9 +44,10 @@ function LoginPage() {
             <br/><br/>
             <LoginForm setError={setError}/>
         </div>
-        <Error error={error}/>
+        <div className={'modal error'}>{error}</div>
         </>
     );
+    
 }
 
 function LoginForm({ setError }) {
@@ -45,7 +60,6 @@ function LoginForm({ setError }) {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        console.log('Регистрация:', form);
 
         const email = form.email;
         const password = form.password;
@@ -55,12 +69,23 @@ function LoginForm({ setError }) {
             const response = await fetch(http);
             const data = await response.json();
             if (!response.ok) {
-                    throw new Error(data.errorCode);
+                let errorMessage;
+                switch(response.status) {
+                    case 404:
+                        errorMessage = 'Аккаунта с указанной почтой не существует';
+                        break;
+                    case 401:
+                        errorMessage = 'Неверный пароль';
+                        break;
+                    default:
+                        errorMessage = 'Произошла серверная ошибка';
+                }
+                throw new Error(errorMessage);
             }
             login(data);
             setError(null);
         } catch (err) {
-            setError(err);
+            setError(err.message);
         }
     };
 
@@ -98,15 +123,6 @@ function LoginForm({ setError }) {
             <button className={"form-button"} type={"submit"}>Войти</button>
         </form>
     );
-}
-
-function Error({ error }) {
-    if (error == null) {
-        return;
-    } else if (error.message === "404 NOT_FOUND") {
-        return <div className={'modal error'}>Аккаунта с указанной почтой не существует<br/>Пожалуйста, зарегистрируйтесь</div>;
-    } 
-    return <div className={'modal error'}>Произошла серверная ошибка<br/>Пожалуйста, обновите страницу или<br/>обратитесь на ресепшен на 4 этаже</div>;
 }
 
 export default LoginPage;
