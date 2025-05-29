@@ -4,7 +4,10 @@ import AuthContext from './AuthContext';
 function AuthProvider({children}) {
     const [user, setUser] = useState(null);
 
-    const login = (authHeader) => setUser({header: authHeader});
+    const login = (response) => setUser({
+        email: response.email,
+        role: response.role
+    });
     const logout = () => setUser(null);
 
     return (

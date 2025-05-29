@@ -7,9 +7,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import centraluniversity.app.booking.models.auth.LoginUserDto;
 import centraluniversity.app.booking.models.auth.SignupUserDto;
 import centraluniversity.app.booking.models.auth.UserResponseDto;
 import centraluniversity.app.booking.services.AuthService;
@@ -23,16 +23,17 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @PostMapping()
+    @PostMapping("/signup")
     public UserResponseDto signup(@Valid @RequestBody SignupUserDto userDto) throws Exception {
         return authService.createUser(userDto);
     }   
 
-    @GetMapping()
-    public UserResponseDto getUserByEmail(@RequestParam String email) throws Exception {
-        return authService.getUserByEmail(email);
+    @PostMapping("/login")
+    public UserResponseDto getUserByEmail(@Valid @RequestBody LoginUserDto userDto) throws Exception {
+        return authService.getUserByEmail(userDto.getEmail(), userDto.getPassword());
     }
 
+    // TODO: update for admin 
     @GetMapping("/{id}")
     public UserResponseDto getUserById(@PathVariable int id) throws Exception {
         return authService.getUserById(id);
