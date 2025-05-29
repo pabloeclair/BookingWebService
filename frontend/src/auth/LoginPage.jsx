@@ -61,12 +61,14 @@ function LoginForm({ setError }) {
     const handleSubmit = async (event) => {
         event.preventDefault();
 
-        const email = form.email;
-        const password = form.password;
-        const http = `http://localhost:8080/users?email=${email}&password=${password}`
-
         try {
-            const response = await fetch(http);
+            const response = await fetch('http://localhost:8080/users/login', {
+                method: 'POST',
+                body: JSON.stringify(form),
+                headers: {
+                    'Content-Type': 'application/json; charset=UTF-8',
+                },
+            });
             const data = await response.json();
             if (!response.ok) {
                 let errorMessage;

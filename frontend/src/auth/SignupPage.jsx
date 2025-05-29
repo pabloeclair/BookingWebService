@@ -34,10 +34,8 @@ function SignupForm({ setUser, setError }) {
         event.preventDefault();
         console.log('Регистрация:', form);
 
-        const http = `http://localhost:8080/users`
-
         try {
-            const response = await fetch(http, {
+            const response = await fetch('http://localhost:8080/users/signup', {
                 method: 'POST',
                 body: JSON.stringify(form),
                 headers: {
