@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -180,6 +181,30 @@ func GetUserById(id uint32) (User, error) {
 	if err := db.GetContext(ctx, &res, query, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return res, fmt.Errorf("%w: user with the id %d doesn't exist", ErrNotFound, id)
+		}
+		return res, fmt.Errorf("getting user by id: select error: %w", err)
+	}
+	return res, nil
+}
+
+func GetUserByKey(sortBy *pb.By, sortValue string) ([]User, error) {
+
+	var res []User
+	ctx, cancel, db, err := connectToDb()
+	if err != nil {
+		return res, err
+	}
+	defer cancel()
+	defer db.Close()
+
+	query := `SELECT * FROM users`
+	if sortBy != pb.By_NONE.Enum() {
+		query += " WHERE " + strings.ToLower(sortBy.String()) + " = $1"
+	}
+
+	if err := db.GetContext(ctx, &res, query, sortValue); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return res, fmt.Errorf("%w: user with %s = %s doesn't exist", ErrNotFound, sortBy.String(), sortValue)
 		}
 		return res, fmt.Errorf("getting user by id: select error: %w", err)
 	}
