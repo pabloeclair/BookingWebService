@@ -11,16 +11,29 @@ services:
     volumes:
       - postgres_data:/data
 
-  grpc:
+  auth_service:
     build: 
       context: .
-      target: grpc
-    container_name: grpc
+      target: auth
+    container_name: auth
     environment:
       - DSN=${DSN}
       - SQL_TIMEOUT=${SQL_TIMEOUT}
     ports:
-      - "7676:7676"
+      - "7001:7001"
+    depends_on:
+      - db
+  
+  admin_service:
+    build: 
+      context: .
+      target: admin
+    container_name: admin
+    environment:
+      - DSN=${DSN}
+      - SQL_TIMEOUT=${SQL_TIMEOUT}
+    ports:
+      - "7002:7002"
     depends_on:
       - db
   
