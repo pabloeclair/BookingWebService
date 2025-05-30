@@ -11,12 +11,10 @@ enum Role {
 }
 
 enum By {
-    EMAIL = 0;
-    ID = 1;
-    FIRST_NAME = 2;
-    SECOND_NAME = 3;
-    ROLE = 4;
-    NONE = 5;
+    FIRST_NAME = 0;
+    SECOND_NAME = 1;
+    ROLE = 2;
+    NONE = 3;
 }
 
 message Empty {}
