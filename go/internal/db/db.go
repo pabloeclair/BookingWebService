@@ -196,6 +196,14 @@ func UpdateUser(oldEmail string, user User) (User, error) {
 	defer cancel()
 	defer db.Close()
 
+	_, err = GetUserByEmail(user.Email)
+	if !errors.Is(err, sql.ErrNoRows) {
+		if err == nil {
+			return res, fmt.Errorf("%w: user with email %s already exists", ErrBadRequest, user.Email)
+		}
+		return res, fmt.Errorf("updating user: %w", err)
+	}
+
 	query := `UPDATE users 
 		SET email = :email, first_name := first_name, second_name := second_name, 
 		patronymic := patronymic WHERE email := email`
