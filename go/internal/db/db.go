@@ -199,10 +199,10 @@ func GetUserByKey(sortBy *pb.By, sortValue string) ([]User, error) {
 
 	query := `SELECT * FROM users`
 	if sortBy != pb.By_NONE.Enum() {
-		query += " WHERE " + strings.ToLower(sortBy.String()) + " = $1"
+		query += " WHERE " + strings.ToLower(sortBy.String()) + " LIKE $1"
 	}
 
-	if err := db.GetContext(ctx, &res, query, sortValue); err != nil {
+	if err := db.GetContext(ctx, &res, query, "%"+sortValue+"%"); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return res, fmt.Errorf("%w: user with %s = %s doesn't exist", ErrNotFound, sortBy.String(), sortValue)
 		}
