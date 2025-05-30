@@ -6,6 +6,8 @@ import (
 	"errors"
 
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -37,12 +39,15 @@ func ComparePassword(email string, password []byte, admin bool) (db.User, error)
 
 func ParseToResult(res db.User) *pb.UserResponse {
 
+	c := cases.Title(language.Russian)
+	patronymic := c.String(res.Patronymic)
+
 	return &pb.UserResponse{
 		Id:         res.ID,
 		Email:      res.Email,
-		FirstName:  res.FirstName,
-		SecondName: res.SecondName,
-		Patronymic: &res.Patronymic,
+		FirstName:  c.String(res.FirstName),
+		SecondName: c.String(res.SecondName),
+		Patronymic: &patronymic,
 		Password:   res.Password,
 		Role:       pb.Role(pb.Role_value[res.Role]),
 	}
