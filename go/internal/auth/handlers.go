@@ -20,12 +20,12 @@ type AuthServer struct {
 }
 
 func LogInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	log.Printf("Server call: %s", info.FullMethod)
+	log.Printf("Auth server: %s", info.FullMethod)
 
 	resp, err := handler(ctx, req)
 
 	if err != nil {
-		log.Printf("RPC failed with error: %v", err)
+		log.Printf("Error: %v", err)
 	}
 
 	return resp, err
@@ -93,38 +93,13 @@ func (s *AuthServer) SignupUser(ctx context.Context, req *pb.SignupRequest) (*pb
 	return parseToResult(res), nil
 }
 
-func (s *AuthServer) GetUserByEmail(ctx context.Context, req *pb.Email) (*pb.UserResponse, error) {
+func (s *AuthServer) LoginUser(ctx context.Context, req *pb.Email) (*pb.UserResponse, error) {
 
 	s.mu.RLock()
 	res, err := comparePassword(req.GetEmail(), []byte(req.GetPassword()))
 	s.mu.RUnlock()
 	if err != nil {
 		return nil, err
-	}
-
-	return parseToResult(res), nil
-}
-
-func (s *AuthServer) GetUserById(ctx context.Context, req *pb.Id) (*pb.UserResponse, error) {
-
-	s.mu.RLock()
-	res, errGet := db.GetUserByEmail(req.GetAdminEmail())
-	s.mu.RUnlock()
-
-	if !errors.Is(errGet, db.ErrNotFound) && errGet != nil {
-		return nil, status.Error(codes.Internal, errGet.Error())
-	}
-
-	err := bcrypt.CompareHashAndPassword([]byte(res.Password), []byte(req.AdminPassword))
-	if err != nil || errors.Is(errGet, db.ErrNotFound) || (res.Role != "ADMIN" && res.Role != "MAIN_ADMIN") {
-		return nil, status.Error(codes.PermissionDenied, "access denied")
-	}
-
-	s.mu.RLock()
-	res, err = db.GetUserById(req.GetId())
-	s.mu.RUnlock()
-	if err != nil {
-		return nil, compareErrAndErrNotFound(err)
 	}
 
 	return parseToResult(res), nil
