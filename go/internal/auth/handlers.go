@@ -4,6 +4,7 @@ import (
 	"context"
 	"cu_coworking_book/go/internal/db"
 	"cu_coworking_book/go/internal/pb"
+	"cu_coworking_book/go/internal/utils"
 	"errors"
 	"log"
 	"sync"
@@ -31,40 +32,6 @@ func LogInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServer
 	return resp, err
 }
 
-func compareErrAndErrNotFound(err error) error {
-	if errors.Is(err, db.ErrNotFound) {
-		return status.Error(codes.NotFound, err.Error())
-	} else {
-		return status.Error(codes.Internal, err.Error())
-	}
-}
-
-func comparePassword(email string, password []byte) (db.User, error) {
-	user, err := db.GetUserByEmail(email)
-
-	if err != nil {
-		return user, compareErrAndErrNotFound(err)
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), password); err != nil {
-		return user, status.Error(codes.Unauthenticated, "password didn't compare")
-	}
-	return user, nil
-}
-
-func parseToResult(res db.User) *pb.UserResponse {
-
-	return &pb.UserResponse{
-		Id:         res.ID,
-		Email:      res.Email,
-		FirstName:  res.FirstName,
-		SecondName: res.SecondName,
-		Patronymic: &res.Patronymic,
-		Password:   res.Password,
-		Role:       pb.Role(pb.Role_value[res.Role]),
-	}
-}
-
 func (s *AuthServer) SignupUser(ctx context.Context, req *pb.SignupRequest) (*pb.UserResponse, error) {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), 12)
@@ -90,25 +57,25 @@ func (s *AuthServer) SignupUser(ctx context.Context, req *pb.SignupRequest) (*pb
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return parseToResult(res), nil
+	return utils.ParseToResult(res), nil
 }
 
 func (s *AuthServer) LoginUser(ctx context.Context, req *pb.Email) (*pb.UserResponse, error) {
 
 	s.mu.RLock()
-	res, err := comparePassword(req.GetEmail(), []byte(req.GetPassword()))
+	res, err := utils.ComparePassword(req.GetEmail(), []byte(req.GetPassword()), false)
 	s.mu.RUnlock()
 	if err != nil {
 		return nil, err
 	}
 
-	return parseToResult(res), nil
+	return utils.ParseToResult(res), nil
 }
 
 func (s *AuthServer) UpdateUser(ctx context.Context, req *pb.UpdateRequest) (*pb.UserResponse, error) {
 
 	s.mu.RLock()
-	_, err := comparePassword(req.GetEmail(), []byte(req.GetPassword()))
+	_, err := utils.ComparePassword(req.GetEmail(), []byte(req.GetPassword()), false)
 	s.mu.RUnlock()
 	if err != nil {
 		return nil, err
@@ -125,16 +92,19 @@ func (s *AuthServer) UpdateUser(ctx context.Context, req *pb.UpdateRequest) (*pb
 	res, err := db.UpdateUser(req.GetOldEmail(), user)
 	s.mu.Unlock()
 	if err != nil {
-		return nil, compareErrAndErrNotFound(err)
+		if errors.Is(err, db.ErrBadRequest) {
+			return nil, status.Error(codes.AlreadyExists, err.Error())
+		}
+		return nil, utils.CompareErrAndErrNotFound(err)
 	}
 
-	return parseToResult(res), nil
+	return utils.ParseToResult(res), nil
 }
 
 func (s *AuthServer) DeleteUser(ctx context.Context, req *pb.Email) (*pb.Empty, error) {
 
 	s.mu.RLock()
-	_, err := comparePassword(req.GetEmail(), []byte(req.GetPassword()))
+	_, err := utils.ComparePassword(req.GetEmail(), []byte(req.GetPassword()), false)
 	s.mu.RUnlock()
 
 	if err != nil {
@@ -145,7 +115,7 @@ func (s *AuthServer) DeleteUser(ctx context.Context, req *pb.Email) (*pb.Empty, 
 	err = db.DeleteUser(req.Email)
 	s.mu.Unlock()
 	if err != nil {
-		return nil, compareErrAndErrNotFound(err)
+		return nil, utils.CompareErrAndErrNotFound(err)
 	}
 	return nil, nil
 }
