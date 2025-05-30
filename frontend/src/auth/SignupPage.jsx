@@ -6,6 +6,36 @@ function SignupPage() {
     const [error, setError] = useState(null);
     const [user, setUser] = useState(false);
 
+    if (error) {
+        return (
+            <>
+            <div className={'form-container'}>
+                <h1>Регистрация</h1>
+                <span className={"text-gray"}>Уже есть аккаунт?</span>
+                <Link to={"../login"} className={"text-link"}>Войти</Link>
+                <br/><br/>
+                <SignupForm setUser={setUser} setError={setError}/>
+            </div>
+            <div className={'modal error'}>{error}</div>
+            </>
+        );
+    }
+
+    if (user) {
+        return (
+            <>
+            <div className={'form-container'}>
+                <h1>Регистрация</h1>
+                <span className={"text-gray"}>Уже есть аккаунт?</span>
+                <Link to={"../login"} className={"text-link"}>Войти</Link>
+                <br/><br/>
+                <SignupForm setUser={setUser} setError={setError}/>
+            </div>
+            <div className={'modal ok'}>Регистрация прошла успешна<br/>Перейдите на страницу авторизации</div>
+            </>
+        );
+    }
+
     return (
         <>
         <div className={'form-container'}>
@@ -15,7 +45,6 @@ function SignupPage() {
             <br/><br/>
             <SignupForm setUser={setUser} setError={setError}/>
         </div>
-        <Modal user={user} error={error} />
         </>
     );
 }
@@ -44,7 +73,13 @@ function SignupForm({ setUser, setError }) {
             });
             const data = await response.json();
             if (!response.ok) {
-                    throw new Error(data.errorCode);
+                let errorMessage;
+                if (response.status == 400) {
+                    errorMessage = 'Аккаунт с указанной почтой уже существует';
+                } else {
+                    errorMessage = 'Произошла серверная ошибка';
+                }
+                throw new Error(errorMessage);
             }
             setError(null);
             setUser(true)
@@ -122,19 +157,5 @@ function SignupForm({ setUser, setError }) {
         </form>
     );
 }
-
-function Modal({ user, error }) {
-    if (user) {
-        return <div className={'modal ok'}>Регистрация прошла успешна<br/>Перейдите на страницу авторизации</div>;
-    }
-    if (!error) return null;
-    switch (error) {
-        case '400 BAD_REQUEST':
-            return <div className={'modal error'}>Аккаунт с указанной почтой уже существует</div>;
-        default:
-            return <div className={'modal error'}>Произошла серверная ошибка<br/>Пожалуйста, обновите страницу или обратитесь на ресепшен на 4 этаже</div>;
-    }
-}
-
 
 export default SignupPage;
