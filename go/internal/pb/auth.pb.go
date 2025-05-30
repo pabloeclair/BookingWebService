@@ -73,31 +73,25 @@ func (Role) EnumDescriptor() ([]byte, []int) {
 type By int32
 
 const (
-	By_EMAIL       By = 0
-	By_ID          By = 1
-	By_FIRST_NAME  By = 2
-	By_SECOND_NAME By = 3
-	By_ROLE        By = 4
-	By_NONE        By = 5
+	By_FIRST_NAME  By = 0
+	By_SECOND_NAME By = 1
+	By_ROLE        By = 2
+	By_NONE        By = 3
 )
 
 // Enum value maps for By.
 var (
 	By_name = map[int32]string{
-		0: "EMAIL",
-		1: "ID",
-		2: "FIRST_NAME",
-		3: "SECOND_NAME",
-		4: "ROLE",
-		5: "NONE",
+		0: "FIRST_NAME",
+		1: "SECOND_NAME",
+		2: "ROLE",
+		3: "NONE",
 	}
 	By_value = map[string]int32{
-		"EMAIL":       0,
-		"ID":          1,
-		"FIRST_NAME":  2,
-		"SECOND_NAME": 3,
-		"ROLE":        4,
-		"NONE":        5,
+		"FIRST_NAME":  0,
+		"SECOND_NAME": 1,
+		"ROLE":        2,
+		"NONE":        3,
 	}
 )
 
@@ -664,7 +658,7 @@ func (x *GetRequestAdmin) GetSortBy() By {
 	if x != nil {
 		return x.SortBy
 	}
-	return By_EMAIL
+	return By_FIRST_NAME
 }
 
 func (x *GetRequestAdmin) GetSortKey() string {
@@ -988,15 +982,13 @@ const file_auth_proto_rawDesc = "" +
 	"\x05ADMIN\x10\x00\x12\b\n" +
 	"\x04USER\x10\x01\x12\x0e\n" +
 	"\n" +
-	"MAIN_ADMIN\x10\x02*L\n" +
-	"\x02By\x12\t\n" +
-	"\x05EMAIL\x10\x00\x12\x06\n" +
-	"\x02ID\x10\x01\x12\x0e\n" +
+	"MAIN_ADMIN\x10\x02*9\n" +
+	"\x02By\x12\x0e\n" +
 	"\n" +
-	"FIRST_NAME\x10\x02\x12\x0f\n" +
-	"\vSECOND_NAME\x10\x03\x12\b\n" +
-	"\x04ROLE\x10\x04\x12\b\n" +
-	"\x04NONE\x10\x052\xe5\x01\n" +
+	"FIRST_NAME\x10\x00\x12\x0f\n" +
+	"\vSECOND_NAME\x10\x01\x12\b\n" +
+	"\x04ROLE\x10\x02\x12\b\n" +
+	"\x04NONE\x10\x032\xe5\x01\n" +
 	"\x0eAuthentication\x12+\n" +
 	"\n" +
 	"SignupUser\x12\x0e.SignupRequest\x1a\r.UserResponse\x12\"\n" +
