@@ -7,6 +7,7 @@ import (
 	"cu_coworking_book/go/internal/utils"
 	"errors"
 	"log"
+	"strings"
 	"sync"
 
 	"golang.org/x/crypto/bcrypt"
@@ -41,9 +42,9 @@ func (s *AuthServer) SignupUser(ctx context.Context, req *pb.SignupRequest) (*pb
 
 	user := db.User{
 		Email:      req.GetEmail(),
-		FirstName:  req.GetFirstName(),
-		SecondName: req.GetSecondName(),
-		Patronymic: req.GetPatronymic(),
+		FirstName:  strings.ToLower(req.GetFirstName()),
+		SecondName: strings.ToLower(req.GetSecondName()),
+		Patronymic: strings.ToLower(req.GetPatronymic()),
 		Password:   string(hashedPassword),
 	}
 
@@ -83,9 +84,9 @@ func (s *AuthServer) UpdateUser(ctx context.Context, req *pb.UpdateRequest) (*pb
 
 	user := db.User{
 		Email:      req.GetEmail(),
-		FirstName:  req.GetFirstName(),
-		SecondName: req.GetSecondName(),
-		Patronymic: req.GetPatronymic(),
+		FirstName:  strings.ToLower(req.GetFirstName()),
+		SecondName: strings.ToLower(req.GetSecondName()),
+		Patronymic: strings.ToLower(req.GetPatronymic()),
 	}
 
 	s.mu.Lock()
