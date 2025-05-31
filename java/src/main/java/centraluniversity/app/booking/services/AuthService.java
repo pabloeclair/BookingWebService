@@ -8,7 +8,6 @@ import centraluniversity.app.booking.models.auth.UserResponseDto;
 import centraluniversity.app.booking.models.exception.HttpStatusException;
 import centraluniversity.app.booking.pb.AuthenticationGrpc;
 import centraluniversity.app.booking.pb.Email;
-import centraluniversity.app.booking.pb.Id;
 import centraluniversity.app.booking.pb.SignupRequest;
 import centraluniversity.app.booking.pb.UserResponse;
 import io.grpc.ManagedChannel;
@@ -26,7 +25,7 @@ public class AuthService {
 
     @PostConstruct
     public void connectToServer() {
-        this.channel = ManagedChannelBuilder.forAddress("grpc", 7676)
+        this.channel = ManagedChannelBuilder.forAddress("auth", 7001)
             .usePlaintext()
             .build();
         this.stub = AuthenticationGrpc.newBlockingStub(channel);
@@ -98,7 +97,7 @@ public class AuthService {
         Email req = Email.newBuilder().setEmail(email).setPassword(password).build();
         UserResponse res;
         try {
-            res = this.stub.getUserByEmail(req);
+            res = this.stub.loginUser(req);
         } catch (StatusRuntimeException e) {
             Status status = e.getStatus();
             if (status.getCode() == Status.Code.NOT_FOUND) {
@@ -120,34 +119,4 @@ public class AuthService {
         ); 
     }
 
-    // TODO: update for admin
-    /**
-     * Get user by id
-     * @param id
-     * @return UserResponseDto - full user information
-     * @throws Exception
-     */
-    public UserResponseDto getUserById(int id) throws Exception {
-
-        Id req = Id.newBuilder().setId(id).build();
-        UserResponse res;
-        try {
-            res = this.stub.getUserById(req);
-        } catch (StatusRuntimeException e) {
-            Status status = e.getStatus();
-            if (status.getCode() == Status.Code.NOT_FOUND) {
-                throw new HttpStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-            }
-            throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
-        return new UserResponseDto(
-            res.getId(),
-            res.getEmail(),
-            res.getFirstName(),
-            res.getSecondName(),
-            res.getPatronymic(),
-            res.getPassword(),
-            res.getRole()
-        ); 
-    }
 }
