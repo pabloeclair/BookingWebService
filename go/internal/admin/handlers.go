@@ -21,12 +21,12 @@ type AdminService struct {
 }
 
 func LogInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	log.Printf("Server call: %s", info.FullMethod)
+	log.Printf("Admin server: %s", info.FullMethod)
 
 	resp, err := handler(ctx, req)
 
 	if err != nil {
-		log.Printf("RPC failed with error: %v", err)
+		log.Printf("Error: %v", err)
 	}
 
 	return resp, err
@@ -67,4 +67,28 @@ func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmi
 	}
 
 	return utils.ParseToResult(res), nil
+}
+
+func (s *AdminService) GetUser(ctx context.Context, req *pb.GetRequestAdmin) (*pb.GetUserResponseAdmin, error) {
+
+	s.mu.RLock()
+	_, err := utils.ComparePassword(req.AdminEmail, []byte(req.AdminPassword), true)
+	s.mu.RUnlock()
+	if err != nil {
+		return nil, err
+	}
+
+	s.mu.RLock()
+	res, err := db.GetUserByKey(&req.SortBy, req.SortKey)
+	s.mu.RUnlock()
+	if err != nil {
+		return nil, utils.CompareErrAndErrNotFound(err)
+	}
+
+	var users []*pb.UserResponse
+	for r := range res {
+		users = append(users, utils.ParseToResult(res[r]))
+	}
+
+	return &pb.GetUserResponseAdmin{Users: users}, nil
 }
