@@ -90,7 +90,7 @@ func (s *AuthServer) UpdateUser(ctx context.Context, req *pb.UpdateRequest) (*pb
 	}
 
 	s.mu.Lock()
-	res, err := db.UpdateUser(req.GetOldEmail(), user)
+	res, err := db.UpdateUser(req.GetId(), user)
 	s.mu.Unlock()
 	if err != nil {
 		if errors.Is(err, db.ErrBadRequest) {
@@ -113,7 +113,7 @@ func (s *AuthServer) DeleteUser(ctx context.Context, req *pb.Email) (*pb.Empty, 
 	}
 
 	s.mu.Lock()
-	err = db.DeleteUser(req.Email)
+	err = db.DeleteUser(req.Id)
 	s.mu.Unlock()
 	if err != nil {
 		return nil, utils.CompareErrAndErrNotFound(err)
