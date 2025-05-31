@@ -18,7 +18,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
 @Service
-public class AdminService {
+public class AdminUserService {
     
     private ManagedChannel channel;
     private AdminServiceGrpc.AdminServiceBlockingStub stub;
