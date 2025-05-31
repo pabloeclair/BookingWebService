@@ -15,6 +15,7 @@ import centraluniversity.app.booking.pb.By;
 import centraluniversity.app.booking.pb.CreateRequestAdmin;
 import centraluniversity.app.booking.pb.GetRequestAdmin;
 import centraluniversity.app.booking.pb.GetUserResponseAdmin;
+import centraluniversity.app.booking.pb.UpdateRequestAdmin;
 import centraluniversity.app.booking.pb.UserResponse;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -136,8 +137,51 @@ public class AdminService {
         return result;
     }
 
-    public UserResponse updateUser(UpdateUserDto user) {
+    public UserResponseDto updateUser(UpdateUserDto user) {
 
-        
+        UpdateRequestAdmin req;
+        if (user.getPatronymic() == null || user.getPatronymic().isEmpty()) {
+            req = UpdateRequestAdmin.newBuilder()
+                .setEmail(user.getEmail())
+                .setFirstName(user.getFirstName())
+                .setSecondName(user.getSecondName())
+                .setPassword(user.getPassword())
+                .setAdminEmail(user.getAdminEmail())
+                .setAdminPassword(user.getAdminPassword())
+                .setId(user.getId())
+                .build();
+        } else {
+            req = UpdateRequestAdmin.newBuilder()
+                .setEmail(user.getEmail())
+                .setFirstName(user.getFirstName())
+                .setSecondName(user.getSecondName())
+                .setPatronymic(user.getPatronymic())
+                .setPassword(user.getPassword())
+                .setAdminEmail(user.getAdminEmail())
+                .setAdminPassword(user.getAdminPassword())
+                .setId(user.getId())
+                .build();
+        }
+
+        UserResponse res;
+        try {
+            res = this.stub.updateUser(req);
+        } catch (StatusRuntimeException e) {
+            Status status = e.getStatus();
+            switch (status.getCode()) {
+                case NOT_FOUND:
+                    throw new HttpStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+                case UNAUTHENTICATED:
+                    throw new HttpStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
+                case PERMISSION_DENIED:
+                    throw new HttpStatusException(HttpStatus.FORBIDDEN, e.getMessage());
+                case ALREADY_EXISTS:
+                    throw new HttpStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+                default:
+                    throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+            }
+        }
+
+        return parseToDto(res);
     }
 }
