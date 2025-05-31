@@ -6,17 +6,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import centraluniversity.app.booking.models.UserResponseDto;
-import centraluniversity.app.booking.models.admin.CreateUserDto;
-import centraluniversity.app.booking.models.admin.GetUserRequestDto;
-import centraluniversity.app.booking.models.admin.UpdateUserDto;
+import centraluniversity.app.booking.models.admin.*;
 import centraluniversity.app.booking.models.exception.HttpStatusException;
 import centraluniversity.app.booking.pb.AdminServiceGrpc;
-import centraluniversity.app.booking.pb.By;
-import centraluniversity.app.booking.pb.CreateRequestAdmin;
-import centraluniversity.app.booking.pb.GetRequestAdmin;
-import centraluniversity.app.booking.pb.GetUserResponseAdmin;
-import centraluniversity.app.booking.pb.UpdateRequestAdmin;
-import centraluniversity.app.booking.pb.UserResponse;
+import centraluniversity.app.booking.pb.*;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
@@ -183,5 +176,30 @@ public class AdminService {
         }
 
         return parseToDto(res);
+    }
+
+    public void deleteUser(DeleteUserDto user) {
+
+        DeleteRequestAdmin req = DeleteRequestAdmin.newBuilder()
+            .setAdminEmail(user.getAdminEmail())
+            .setAdminPassword(user.getAdminPassword())
+            .setId(user.getId())
+            .build();
+        
+        try {
+            this.stub.deleteUser(req);
+        } catch (StatusRuntimeException e) {
+            Status status = e.getStatus();
+            switch (status.getCode()) {
+                case NOT_FOUND:
+                    throw new HttpStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+                case UNAUTHENTICATED:
+                    throw new HttpStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
+                case PERMISSION_DENIED:
+                    throw new HttpStatusException(HttpStatus.FORBIDDEN, e.getMessage());
+                default:
+                    throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+            }
+        }
     }
 }
