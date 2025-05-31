@@ -100,14 +100,16 @@ public class AuthService {
             res = this.stub.loginUser(req);
         } catch (StatusRuntimeException e) {
             Status status = e.getStatus();
-            if (status.getCode() == Status.Code.NOT_FOUND) {
-                throw new HttpStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-            } else if (status.getCode() == Status.Code.UNAUTHENTICATED) {
-                throw new HttpStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
+            switch (status.getCode()) {
+                case NOT_FOUND:
+                    throw new HttpStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+                case UNAUTHENTICATED:
+                    throw new HttpStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
+                default:
+                    throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
             }
-            throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         }
-        ;
+        
         return new UserResponseDto(
             res.getId(),
             res.getEmail(),
