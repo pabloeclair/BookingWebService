@@ -7,9 +7,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import centraluniversity.app.booking.models.UserResponseDto;
 import centraluniversity.app.booking.models.auth.LoginUserDto;
 import centraluniversity.app.booking.models.auth.SignupUserDto;
-import centraluniversity.app.booking.models.auth.UserResponseDto;
 import centraluniversity.app.booking.services.AuthService;
 import lombok.RequiredArgsConstructor;
 
