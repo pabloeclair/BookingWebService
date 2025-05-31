@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import centraluniversity.app.booking.models.UserResponseDto;
 import centraluniversity.app.booking.models.admin.CreateUserDto;
 import centraluniversity.app.booking.models.admin.GetUserRequestDto;
+import centraluniversity.app.booking.models.admin.UpdateUserDto;
 import centraluniversity.app.booking.models.exception.HttpStatusException;
 import centraluniversity.app.booking.pb.AdminServiceGrpc;
 import centraluniversity.app.booking.pb.By;
@@ -27,6 +28,18 @@ public class AdminService {
     
     private ManagedChannel channel;
     private AdminServiceGrpc.AdminServiceBlockingStub stub;
+
+    private UserResponseDto parseToDto(UserResponse user) {
+        return new UserResponseDto(
+            user.getId(),
+            user.getEmail(),
+            user.getFirstName(),
+            user.getSecondName(),
+            user.getPatronymic(),
+            user.getPassword(),
+            user.getRole()
+        );
+    }
 
     @PostConstruct
     public void connectToServer() {
@@ -84,15 +97,7 @@ public class AdminService {
             }
         } 
 
-        return new UserResponseDto(
-            res.getId(),
-            res.getEmail(),
-            res.getFirstName(),
-            res.getSecondName(),
-            res.getPatronymic(),
-            res.getPassword(),
-            res.getRole()
-        );
+        return parseToDto(res);
     }
 
     public UserResponseDto[] getUser(GetUserRequestDto user) {
@@ -125,17 +130,14 @@ public class AdminService {
         UserResponseDto[] result = new UserResponseDto[res.getUsersCount()];
         for (int i = 0; i < res.getUsersCount(); i++) {
             UserResponse resUser = users.get(i);
-            result[i] = new UserResponseDto(
-                resUser.getId(),
-                resUser.getEmail(),
-                resUser.getFirstName(),
-                resUser.getSecondName(),
-                resUser.getPatronymic(),
-                resUser.getPassword(),
-                resUser.getRole()
-            );
+            result[i] = parseToDto(resUser);
         }
-        
+
         return result;
+    }
+
+    public UserResponse updateUser(UpdateUserDto user) {
+
+        
     }
 }
