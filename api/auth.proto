@@ -49,6 +49,7 @@ message SignupRequest {
 message Email {
     string email = 1;
     string password = 2;
+    uint32 id = 3;
 }
 
 message UpdateRequest {
@@ -57,7 +58,7 @@ message UpdateRequest {
     string second_name = 3;
     optional string patronymic = 4;
     string password = 5;
-    string old_email = 6;
+    uint32 id = 6;
 }
 
 message UpdatePasswordRequest {
@@ -67,7 +68,7 @@ message UpdatePasswordRequest {
 }
 
 service AdminService {
-    rpc CreateUser (CreateRequestAdmin) returns (Empty);
+    rpc CreateUser (CreateRequestAdmin) returns (UserResponse);
     rpc GetUser (GetRequestAdmin) returns (GetUserResponseAdmin);
     rpc UpdateUser (UpdateRequestAdmin) returns (UserResponse);
     rpc DeleteUser (DeleteRequestAdmin) returns (Empty);
