@@ -211,7 +211,7 @@ func GetUserByKey(sortBy *pb.By, sortValue string) ([]User, error) {
 	return res, nil
 }
 
-func UpdateUser(oldEmail string, user User) (User, error) {
+func UpdateUser(id uint32, user User) (User, error) {
 
 	var res User
 	ctx, cancel, db, err := connectToDb()
@@ -231,11 +231,11 @@ func UpdateUser(oldEmail string, user User) (User, error) {
 
 	query := `UPDATE users 
 		SET email = :email, first_name := first_name, second_name := second_name, 
-		patronymic := patronymic WHERE email := email`
+		patronymic := patronymic WHERE id := id`
 
 	if _, err := db.NamedExecContext(ctx, query, &user); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return res, fmt.Errorf("%w: user with the email %s doesn't exist", ErrNotFound, oldEmail)
+			return res, fmt.Errorf("%w: user with the id %d doesn't exist", ErrNotFound, id)
 		}
 		return res, fmt.Errorf("updating user: update error: %w", err)
 	}
@@ -248,7 +248,7 @@ func UpdateUser(oldEmail string, user User) (User, error) {
 
 }
 
-func DeleteUser(email string) error {
+func DeleteUser(id uint32) error {
 
 	ctx, cancel, db, err := connectToDb()
 	if err != nil {
@@ -257,9 +257,9 @@ func DeleteUser(email string) error {
 	defer cancel()
 	defer db.Close()
 
-	if _, err := db.ExecContext(ctx, `DELETE FROM users WHERE email = $1`, email); err != nil {
+	if _, err := db.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("%w: user with the email %s doesn't exist", ErrNotFound, email)
+			return fmt.Errorf("%w: user with the id %d doesn't exist", ErrNotFound, id)
 		}
 		return fmt.Errorf("deleting user: db error: %w", err)
 	}
