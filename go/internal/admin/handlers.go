@@ -7,6 +7,7 @@ import (
 	"cu_coworking_book/go/internal/utils"
 	"errors"
 	"log"
+	"strings"
 	"sync"
 
 	"golang.org/x/crypto/bcrypt"
@@ -16,7 +17,7 @@ import (
 )
 
 type AdminService struct {
-	pb.UnimplementedAuthenticationServer
+	pb.UnimplementedAdminServiceServer
 	mu sync.RWMutex
 }
 
@@ -91,4 +92,52 @@ func (s *AdminService) GetUser(ctx context.Context, req *pb.GetRequestAdmin) (*p
 	}
 
 	return &pb.GetUserResponseAdmin{Users: users}, nil
+}
+
+func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmin) (*pb.UserResponse, error) {
+
+	s.mu.RLock()
+	_, err := utils.ComparePassword(req.AdminEmail, []byte(req.AdminPassword), true)
+	s.mu.RUnlock()
+	if err != nil {
+		return nil, err
+	}
+
+	user := db.User{
+		Email:      req.GetEmail(),
+		FirstName:  strings.ToLower(req.GetFirstName()),
+		SecondName: strings.ToLower(req.GetSecondName()),
+		Patronymic: strings.ToLower(req.GetPatronymic()),
+	}
+
+	s.mu.Lock()
+	res, err := db.UpdateUser(req.GetId(), user)
+	s.mu.Unlock()
+	if err != nil {
+		if errors.Is(err, db.ErrBadRequest) {
+			return nil, status.Error(codes.AlreadyExists, err.Error())
+		}
+		return nil, utils.CompareErrAndErrNotFound(err)
+	}
+
+	return utils.ParseToResult(res), nil
+}
+
+func (s *AdminService) DeleteUser(ctx context.Context, req *pb.DeleteRequestAdmin) (*pb.Empty, error) {
+
+	s.mu.RLock()
+	_, err := utils.ComparePassword(req.GetAdminEmail(), []byte(req.GetAdminPassword()), true)
+	s.mu.RUnlock()
+
+	if err != nil {
+		return nil, err
+	}
+
+	s.mu.Lock()
+	err = db.DeleteUser(req.Id)
+	s.mu.Unlock()
+	if err != nil {
+		return nil, utils.CompareErrAndErrNotFound(err)
+	}
+	return nil, nil
 }
