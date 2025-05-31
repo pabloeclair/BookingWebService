@@ -1,13 +1,19 @@
 package centraluniversity.app.booking.services;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import centraluniversity.app.booking.models.UserResponseDto;
 import centraluniversity.app.booking.models.admin.CreateUserDto;
+import centraluniversity.app.booking.models.admin.GetUserRequestDto;
 import centraluniversity.app.booking.models.exception.HttpStatusException;
 import centraluniversity.app.booking.pb.AdminServiceGrpc;
+import centraluniversity.app.booking.pb.By;
 import centraluniversity.app.booking.pb.CreateRequestAdmin;
+import centraluniversity.app.booking.pb.GetRequestAdmin;
+import centraluniversity.app.booking.pb.GetUserResponseAdmin;
 import centraluniversity.app.booking.pb.UserResponse;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -24,7 +30,7 @@ public class AdminService {
 
     @PostConstruct
     public void connectToServer() {
-        this.channel = ManagedChannelBuilder.forAddress("admin", 7001)
+        this.channel = ManagedChannelBuilder.forAddress("admin", 7002)
             .usePlaintext()
             .build();
         this.stub = AdminServiceGrpc.newBlockingStub(channel);
@@ -66,14 +72,16 @@ public class AdminService {
             res = this.stub.createUser(req);
         } catch (StatusRuntimeException e) {
             Status status = e.getStatus();
-            if (status.getCode() == Status.Code.ALREADY_EXISTS) {
-                throw new HttpStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-            } else if (status.getCode() == Status.Code.UNAUTHENTICATED) {
-                throw new HttpStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
-            } else if (status.getCode() == Status.Code.PERMISSION_DENIED) {
-                throw new HttpStatusException(HttpStatus.FORBIDDEN, e.getMessage());
+            switch (status.getCode()) {
+                case ALREADY_EXISTS:
+                    throw new HttpStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+                case UNAUTHENTICATED:
+                    throw new HttpStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
+                case PERMISSION_DENIED:
+                    throw new HttpStatusException(HttpStatus.FORBIDDEN, e.getMessage());
+                default:
+                    throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
             }
-            throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         } 
 
         return new UserResponseDto(
@@ -85,5 +93,49 @@ public class AdminService {
             res.getPassword(),
             res.getRole()
         );
+    }
+
+    public UserResponseDto[] getUser(GetUserRequestDto user) {
+
+        GetRequestAdmin req = GetRequestAdmin.newBuilder()
+            .setAdminEmail(user.getAdminEmail())
+            .setAdminPassword(user.getAdminPassword())
+            .setSortBy(By.valueOf(user.getSortBy()))
+            .setSortKey(user.getSortKey())
+            .build();
+
+        GetUserResponseAdmin res;
+        try {
+            res = this.stub.getUser(req);
+        } catch (StatusRuntimeException e) {
+            Status status = e.getStatus();
+            switch (status.getCode()) {
+                case NOT_FOUND:
+                    throw new HttpStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+                case UNAUTHENTICATED:
+                    throw new HttpStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
+                case PERMISSION_DENIED:
+                    throw new HttpStatusException(HttpStatus.FORBIDDEN, e.getMessage());
+                default:
+                    throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+            }
+        }
+
+        List<UserResponse> users = res.getUsersList();
+        UserResponseDto[] result = new UserResponseDto[res.getUsersCount()];
+        for (int i = 0; i < res.getUsersCount(); i++) {
+            UserResponse resUser = users.get(i);
+            result[i] = new UserResponseDto(
+                resUser.getId(),
+                resUser.getEmail(),
+                resUser.getFirstName(),
+                resUser.getSecondName(),
+                resUser.getPatronymic(),
+                resUser.getPassword(),
+                resUser.getRole()
+            );
+        }
+        
+        return result;
     }
 }
