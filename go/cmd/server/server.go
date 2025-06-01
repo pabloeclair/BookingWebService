@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
-	"cu_coworking_book/go/internal/admin"
-	"cu_coworking_book/go/internal/auth"
 	"cu_coworking_book/go/internal/db"
 	"cu_coworking_book/go/internal/pb"
+	"cu_coworking_book/go/internal/server/admin"
+	"cu_coworking_book/go/internal/server/auth"
 	"errors"
 	"fmt"
 	"log"
