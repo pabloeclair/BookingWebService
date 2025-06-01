@@ -20,6 +20,8 @@ type AuthServer struct {
 	mu sync.RWMutex
 }
 
+// Записывает логи применения всех хандлеров. Если какой-то из хандлеров
+// запустился  неудачно, то сообщает о типе и сообщении ошибки.
 func LogInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	log.Printf("Auth server: %s", info.FullMethod)
 
@@ -32,7 +34,9 @@ func LogInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServer
 	return resp, err
 }
 
-func (s *AuthServer) SignupUser(ctx context.Context, req *pb.SignupRequest) (*pb.UserResponse, error) {
+// Хэндлер регистрации нового пользователя. Если пользователь уже
+// существует, возвращает ошибку AlreadyExists.
+func (s *AuthServer) SignupUser(ctx context.Context, req *pb.SignupRequest) (*pb.Empty, error) {
 
 	user := db.User{
 		Email:      req.GetEmail(),
@@ -43,7 +47,7 @@ func (s *AuthServer) SignupUser(ctx context.Context, req *pb.SignupRequest) (*pb
 	}
 
 	s.mu.Lock()
-	res, err := db.CreateUser(user)
+	err := db.CreateUser(user)
 	s.mu.Unlock()
 	if err != nil {
 		if errors.Is(err, db.ErrBadRequest) {
@@ -52,10 +56,10 @@ func (s *AuthServer) SignupUser(ctx context.Context, req *pb.SignupRequest) (*pb
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return utils.ParseToResult(res), nil
+	return nil, nil
 }
 
-func (s *AuthServer) LoginUser(ctx context.Context, req *pb.Email) (*pb.UserResponse, error) {
+func (s *AuthServer) LoginUser(ctx context.Context, req *pb.Email) (*pb.GetResponse, error) {
 
 	s.mu.RLock()
 	res, err := utils.ComparePassword(req.GetEmail(), req.GetPassword(), false)
@@ -67,7 +71,7 @@ func (s *AuthServer) LoginUser(ctx context.Context, req *pb.Email) (*pb.UserResp
 	return utils.ParseToResult(res), nil
 }
 
-func (s *AuthServer) UpdateUser(ctx context.Context, req *pb.UpdateRequest) (*pb.UserResponse, error) {
+func (s *AuthServer) UpdateUser(ctx context.Context, req *pb.UpdateRequest) (*pb.Empty, error) {
 
 	s.mu.RLock()
 	_, err := utils.ComparePassword(req.GetEmail(), req.GetPassword(), false)
@@ -84,7 +88,7 @@ func (s *AuthServer) UpdateUser(ctx context.Context, req *pb.UpdateRequest) (*pb
 	}
 
 	s.mu.Lock()
-	res, err := db.UpdateUser(req.GetId(), user)
+	err = db.UpdateUser(req.GetId(), user)
 	s.mu.Unlock()
 	if err != nil {
 		if errors.Is(err, db.ErrBadRequest) {
@@ -93,7 +97,7 @@ func (s *AuthServer) UpdateUser(ctx context.Context, req *pb.UpdateRequest) (*pb
 		return nil, utils.CompareErrAndErrNotFound(err)
 	}
 
-	return utils.ParseToResult(res), nil
+	return nil, nil
 }
 
 func (s *AuthServer) DeleteUser(ctx context.Context, req *pb.Email) (*pb.Empty, error) {

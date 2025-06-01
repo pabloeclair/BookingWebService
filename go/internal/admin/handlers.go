@@ -20,6 +20,8 @@ type AdminService struct {
 	mu sync.RWMutex
 }
 
+// Записывает логи применения всех хандлеров. Если какой-то из хандлеров
+// запустился  неудачно, то сообщает о типе и сообщении ошибки.
 func LogInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	log.Printf("Admin server: %s", info.FullMethod)
 
@@ -32,7 +34,7 @@ func LogInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServer
 	return resp, err
 }
 
-func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmin) (*pb.UserResponse, error) {
+func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmin) (*pb.Empty, error) {
 
 	s.mu.RLock()
 	_, err := utils.ComparePassword(req.AdminEmail, req.AdminPassword, true)
@@ -51,7 +53,7 @@ func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmi
 	}
 
 	s.mu.Lock()
-	res, err := db.CreateUser(user)
+	err = db.CreateUser(user)
 	s.mu.Unlock()
 
 	if err != nil {
@@ -61,10 +63,10 @@ func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmi
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return utils.ParseToResult(res), nil
+	return nil, nil
 }
 
-func (s *AdminService) GetUser(ctx context.Context, req *pb.GetRequestAdmin) (*pb.GetUserResponseAdmin, error) {
+func (s *AdminService) GetUser(ctx context.Context, req *pb.GetRequestAdmin) (*pb.GetResponseAdmin, error) {
 
 	s.mu.RLock()
 	_, err := utils.ComparePassword(req.AdminEmail, req.AdminPassword, true)
@@ -80,21 +82,25 @@ func (s *AdminService) GetUser(ctx context.Context, req *pb.GetRequestAdmin) (*p
 		return nil, utils.CompareErrAndErrNotFound(err)
 	}
 
-	var users []*pb.UserResponse
+	var users []*pb.GetResponse
 	for r := range res {
 		users = append(users, utils.ParseToResult(res[r]))
 	}
 
-	return &pb.GetUserResponseAdmin{Users: users}, nil
+	return &pb.GetResponseAdmin{Users: users}, nil
 }
 
-func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmin) (*pb.UserResponse, error) {
+func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmin) (*pb.Empty, error) {
 
 	s.mu.RLock()
-	_, err := utils.ComparePassword(req.AdminEmail, req.AdminPassword, true)
+	admin, err := utils.ComparePassword(req.AdminEmail, req.AdminPassword, true)
 	s.mu.RUnlock()
 	if err != nil {
 		return nil, err
+	}
+
+	if (req.Role == pb.Role_MAIN_ADMIN || req.Role == pb.Role_ADMIN) && admin.Role == pb.Role_ADMIN.String() {
+		return nil, status.Error(codes.PermissionDenied, "Администратор может изменять только обычных пользователей")
 	}
 
 	user := db.User{
@@ -105,7 +111,7 @@ func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmi
 	}
 
 	s.mu.Lock()
-	res, err := db.UpdateUser(req.GetId(), user)
+	err = db.UpdateUser(req.GetId(), user)
 	s.mu.Unlock()
 	if err != nil {
 		if errors.Is(err, db.ErrBadRequest) {
@@ -114,7 +120,7 @@ func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmi
 		return nil, utils.CompareErrAndErrNotFound(err)
 	}
 
-	return utils.ParseToResult(res), nil
+	return nil, nil
 }
 
 func (s *AdminService) DeleteUser(ctx context.Context, req *pb.DeleteRequestAdmin) (*pb.Empty, error) {

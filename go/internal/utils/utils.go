@@ -48,12 +48,12 @@ func ComparePassword(email string, password string, admin bool) (db.User, error)
 	return user, nil
 }
 
-func ParseToResult(res db.User) *pb.UserResponse {
+func ParseToResult(res db.User) *pb.GetResponse {
 
 	c := cases.Title(language.Russian)
 	patronymic := c.String(res.Patronymic)
 
-	return &pb.UserResponse{
+	return &pb.GetResponse{
 		Id:         res.ID,
 		Email:      res.Email,
 		FirstName:  c.String(res.FirstName),
