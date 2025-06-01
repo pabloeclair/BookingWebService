@@ -105,38 +105,47 @@ func DeleteTable() error {
 	return nil
 }
 
-func CreateUser(user User) error {
+func CreateUser(user User) (uint32, error) {
+
+	if _, err := GetUserByEmail(user.Email); !errors.Is(err, ErrNotFound) {
+		if err != nil {
+			return 0, fmt.Errorf("creating user: ошибка проверки почты: %w", err)
+		}
+		return 0, fmt.Errorf("%w: пользователь с почтой %s уже существует", ErrBadRequest, user.Email)
+	}
 
 	ctx, cancel, db, err := connectToDb()
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer cancel()
 	defer db.Close()
-
-	if _, err = GetUserByEmail(user.Email); !errors.Is(err, ErrNotFound) {
-		if err != nil {
-			return fmt.Errorf("creating user: ошибка проверки почты: %w", err)
-		}
-		return fmt.Errorf("%w: пользователь с почтой %s уже существует", ErrBadRequest, user.Email)
-	}
 
 	var id uint32
 	if err = db.GetContext(ctx, &id, `SELECT id FROM users LIMIT 1`); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			user.Role = pb.Role_MAIN_ADMIN.String()
 		} else {
-			return fmt.Errorf("creating user: select error: %w", err)
+			return 0, fmt.Errorf("creating user: select error: %w", err)
 		}
 	}
 
 	queryInsert := `INSERT INTO users (email, first_name, second_name, patronymic, password, role) 
 		VALUES (:email, :first_name, :second_name, :patronymic, :password, :role);`
 	if _, err = db.NamedExecContext(ctx, queryInsert, &user); err != nil {
-		return fmt.Errorf("creating user: insert error: %w", err)
+		return 0, fmt.Errorf("creating user: insert error: %w", err)
 	}
 
-	return nil
+	var idRes uint32
+	querySelect := `SELECT id FROM users WHERE email = $1;`
+	if err := db.GetContext(ctx, &idRes, querySelect, user.Email); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, fmt.Errorf("%w: пользователь с id = %d не существует", ErrNotFound, idRes)
+		}
+		return 0, fmt.Errorf("getting user by id: select error: %w", err)
+	}
+
+	return idRes, nil
 }
 
 func GetUserByEmail(email string) (User, error) {
@@ -205,20 +214,20 @@ func GetUserByKey(sortBy *pb.By, sortValue string) ([]User, error) {
 
 func UpdateUser(id uint32, user User) error {
 
-	ctx, cancel, db, err := connectToDb()
-	if err != nil {
-		return err
-	}
-	defer cancel()
-	defer db.Close()
-
-	_, err = GetUserByEmail(user.Email)
+	_, err := GetUserByEmail(user.Email)
 	if !errors.Is(err, sql.ErrNoRows) {
 		if err == nil {
 			return fmt.Errorf("%w: пользователь с почтой %s уже существует", ErrBadRequest, user.Email)
 		}
 		return fmt.Errorf("updating user: %w", err)
 	}
+
+	ctx, cancel, db, err := connectToDb()
+	if err != nil {
+		return err
+	}
+	defer cancel()
+	defer db.Close()
 
 	query := `UPDATE users 
 		SET email = :email, first_name := first_name, second_name := second_name, 
