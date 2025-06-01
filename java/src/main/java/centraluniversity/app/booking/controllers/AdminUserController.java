@@ -24,11 +24,11 @@ public class AdminUserController {
         return adminService.createUser(user);
     }
 
-    @GetMapping("/{sort_key}")
+    @GetMapping("/{by}/{sort_key}")
     public GetUserDto getUser(@PathVariable("sort_key") String sortKey,
         @RequestParam(name = "email", required = true) String email,
         @RequestParam(name = "key", required = true) String key,
-        @RequestParam(name = "by", required = true) String sortBy) {
+        @PathVariable String sortBy) {
         return adminService.getUser(email, key, By.valueOf(sortBy), sortKey);
     }
 
