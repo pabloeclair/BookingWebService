@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// Сверяет тип ошибки и возвращает NotFound или Internal.
 func CompareErrAndErrNotFound(err error) error {
 	if errors.Is(err, db.ErrNotFound) {
 		return status.Error(codes.NotFound, err.Error())
@@ -21,6 +22,8 @@ func CompareErrAndErrNotFound(err error) error {
 	}
 }
 
+// Сверяет пароль указанного пользователя, а также проверяет роль при выполнении
+// команд администратора.
 func ComparePassword(email string, password string, admin bool) (db.User, error) {
 	user, err := db.GetUserByEmail(email)
 
@@ -48,6 +51,7 @@ func ComparePassword(email string, password string, admin bool) (db.User, error)
 	return user, nil
 }
 
+// Преобразовывает db.User в pb.GetResponse, а также возвращает ФИО с Большой Буквы.
 func ParseToResult(res db.User) *pb.GetResponse {
 
 	c := cases.Title(language.Russian)
