@@ -53,7 +53,7 @@ func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmi
 	}
 
 	s.mu.Lock()
-	err = db.CreateUser(user)
+	_, err = db.CreateUser(user)
 	s.mu.Unlock()
 
 	if err != nil {

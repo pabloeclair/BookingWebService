@@ -36,7 +36,7 @@ func LogInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServer
 
 // Хэндлер регистрации нового пользователя. Если пользователь уже
 // существует, возвращает ошибку AlreadyExists.
-func (s *AuthServer) SignupUser(ctx context.Context, req *pb.SignupRequest) (*pb.Empty, error) {
+func (s *AuthServer) SignupUser(ctx context.Context, req *pb.SignupRequest) (*pb.Id, error) {
 
 	user := db.User{
 		Email:      req.GetEmail(),
@@ -47,7 +47,7 @@ func (s *AuthServer) SignupUser(ctx context.Context, req *pb.SignupRequest) (*pb
 	}
 
 	s.mu.Lock()
-	err := db.CreateUser(user)
+	id, err := db.CreateUser(user)
 	s.mu.Unlock()
 	if err != nil {
 		if errors.Is(err, db.ErrBadRequest) {
@@ -56,7 +56,7 @@ func (s *AuthServer) SignupUser(ctx context.Context, req *pb.SignupRequest) (*pb
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return nil, nil
+	return &pb.Id{Id: id}, nil
 }
 
 func (s *AuthServer) LoginUser(ctx context.Context, req *pb.Email) (*pb.GetResponse, error) {

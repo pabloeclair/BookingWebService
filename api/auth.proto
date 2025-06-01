@@ -21,11 +21,15 @@ enum By {
 message Empty {}
 
 service Authentication {
-    rpc SignupUser (SignupRequest) returns (Empty);
+    rpc SignupUser (SignupRequest) returns (Id);
     rpc LoginUser (Email) returns (GetResponse);
     rpc UpdateUser (UpdateRequest) returns (Empty);
     rpc UpdatePassword (UpdatePasswordRequest) returns (Empty);
     rpc DeleteUser (Email) returns (Empty);
+}
+
+message Id {
+    uint32 id = 1;
 }
 
 message GetResponse {
@@ -65,6 +69,7 @@ message UpdatePasswordRequest {
     string email = 1;
     string old_password = 2;
     string new_password = 3;
+    uint32 id = 4;
 }
 
 service AdminService {
