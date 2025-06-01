@@ -100,6 +100,25 @@ func (s *AuthServer) UpdateUser(ctx context.Context, req *pb.UpdateRequest) (*pb
 	return nil, nil
 }
 
+func (s *AuthServer) UpdatePassword(ctx context.Context, req *pb.UpdatePasswordRequest) (*pb.Empty, error) {
+
+	s.mu.RLock()
+	_, err := utils.ComparePassword(req.GetEmail(), req.GetOldPassword(), false)
+	s.mu.RUnlock()
+	if err != nil {
+		return nil, err
+	}
+
+	s.mu.Lock()
+	err = db.UpdatePassword(req.GetId(), req.GetNewPassword())
+	s.mu.Unlock()
+
+	if err != nil {
+		return nil, utils.CompareErrAndErrNotFound(err)
+	}
+	return nil, nil
+}
+
 func (s *AuthServer) DeleteUser(ctx context.Context, req *pb.Email) (*pb.Empty, error) {
 
 	s.mu.RLock()
