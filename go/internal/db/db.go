@@ -232,7 +232,27 @@ func UpdateUser(id uint32, user User) error {
 	}
 
 	return nil
+}
 
+func UpdatePassword(id uint32, password string) error {
+
+	ctx, cancel, db, err := connectToDb()
+	if err != nil {
+		return fmt.Errorf("updating password: %w", err)
+	}
+	defer cancel()
+	defer db.Close()
+
+	query := `UPDATE users SET password = $1 WHERE id = $2`
+
+	if _, err := db.ExecContext(ctx, query, password, id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("%w: пользователь с id = %d не существует", ErrNotFound, id)
+		}
+		return fmt.Errorf("updating password: update error: %w", err)
+	}
+
+	return nil
 }
 
 func DeleteUser(id uint32) error {
