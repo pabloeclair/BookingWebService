@@ -20,8 +20,7 @@ type AdminService struct {
 	mu sync.RWMutex
 }
 
-// Записывает логи применения всех хандлеров. Если какой-то из хандлеров
-// запустился  неудачно, то сообщает о типе и сообщении ошибки.
+// Записывает логи применения всех хэндлеров. Если какой-то из хэндлеров запустился неудачно, то сообщает о типе и сообщении ошибки.
 func LogInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	log.Printf("Admin server: %s", info.FullMethod)
 
@@ -36,6 +35,10 @@ func LogInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServer
 
 // Создает нового пользователя с указанными администратором полями.
 func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmin) (*pb.Empty, error) {
+	// - Если пользователь с указанной почтой уже существует, то вернется ошибка AlreadyExists.
+
+	// При любых других ошибках – Internal.
+	// Показатель успеха — отсутствие ошибки.
 
 	s.mu.RLock()
 	_, err := utils.ComparePassword(req.AdminEmail, req.AdminPassword, true)
@@ -69,6 +72,13 @@ func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmi
 
 // Возвращает список всех пользователей, удовлетворяющих заданному ключу.
 func (s *AdminService) GetUser(ctx context.Context, req *pb.GetRequestAdmin) (*pb.GetResponseAdmin, error) {
+	// - Если ни один пользователь с указанной почтой не найден, вернется ошибка NotFound.
+
+	// - Если почта администратора не найдена — NotFound.
+	// - Если пароль администратора не совпал — Unauthenticated.
+
+	// При любых других ошибках – Internal.
+	// Показатель успеха — информация о всех найденных пользователях.
 
 	s.mu.RLock()
 	_, err := utils.ComparePassword(req.AdminEmail, req.AdminPassword, true)
@@ -92,9 +102,23 @@ func (s *AdminService) GetUser(ctx context.Context, req *pb.GetRequestAdmin) (*p
 	return &pb.GetResponseAdmin{Users: users}, nil
 }
 
-// Обновляет информацию о пользователе по заданным полям. Притом обычные администраторы могут изменять только
-// пользователей, когда как администраторов может изменить только единственный главный администратор.
+// Обновляет информацию о пользователе по заданным полям.
 func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmin) (*pb.Empty, error) {
+	// ADMIN могут изменять только USER.
+	// MAIN_ADMIN может изменять ADMIN и USER.
+	// Гарантируется, что MAIN_ADMIN будет единственным.
+
+	// - Если ADMIN попытается изменить ADMIN или MAIN_ADMIN, то вернется ошибка PermissionDenied.
+	// - Если MAIN_ADMIN попытается изменить другого MAIN_ADMIN, то вернется Internal, т.к. должен
+	// быть только один MAIN_ADMIN.
+	// - Если изменяемый пользователь не найден — NotFound.
+	// - Если новая почта изменяемого пользователя уже существует — BadRequest.
+
+	// - Если почта администратора не найдена — NotFound.
+	// - Если пароль администратора не совпал — Unauthenticated.
+
+	// При любых других ошибках – Internal.
+	// Показатель успеха — отсутствие ошибки.
 
 	s.mu.RLock()
 	admin, err := utils.ComparePassword(req.AdminEmail, req.AdminPassword, true)
@@ -105,6 +129,10 @@ func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmi
 
 	if (req.Role == pb.Role_MAIN_ADMIN || req.Role == pb.Role_ADMIN) && admin.Role == pb.Role_ADMIN.String() {
 		return nil, status.Error(codes.PermissionDenied, "Администратор может изменять только обычных пользователей")
+	}
+
+	if req.Role == pb.Role_MAIN_ADMIN && admin.Role == pb.Role_MAIN_ADMIN.String() {
+		return nil, status.Error(codes.Internal, "Должен быть только один MAIN_ADMIN!!!")
 	}
 
 	user := db.User{
@@ -130,6 +158,20 @@ func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmi
 // Удаляет указанного пользователя. Притом обычные администраторы могут удалять только
 // пользователей, когда как администраторов может удалять только единственный главный администратор.
 func (s *AdminService) DeleteUser(ctx context.Context, req *pb.DeleteRequestAdmin) (*pb.Empty, error) {
+	// ADMIN могут удалять только USER.
+	// MAIN_ADMIN может удалять ADMIN и USER.
+	// Гарантируется, что MAIN_ADMIN будет единственным.
+
+	// - Если ADMIN попытается удалить ADMIN или MAIN_ADMIN, то вернется ошибка PermissionDenied.
+	// - Если MAIN_ADMIN попытается изменить другого MAIN_ADMIN, то вернется Internal, т.к. должен
+	// быть только один MAIN_ADMIN.
+	// - Если ни один пользователь с указанной почтой не найден, вернется ошибка NotFound.
+
+	// - Если почта администратора не найдена — NotFound.
+	// - Если пароль администратора не совпал — Unauthenticated.
+
+	// При любых других ошибках – Internal.
+	// Показатель успеха — информация о всех найденных пользователях.
 
 	s.mu.RLock()
 	admin, err := utils.ComparePassword(req.AdminEmail, req.AdminPassword, true)
@@ -147,6 +189,10 @@ func (s *AdminService) DeleteUser(ctx context.Context, req *pb.DeleteRequestAdmi
 
 	if (user.Role == pb.Role_MAIN_ADMIN.String() || user.Role == pb.Role_ADMIN.String()) && admin.Role == pb.Role_ADMIN.String() {
 		return nil, status.Error(codes.PermissionDenied, "Администратор может удалять только обычных пользователей")
+	}
+
+	if user.Role == pb.Role_MAIN_ADMIN.String() && admin.Role == pb.Role_MAIN_ADMIN.String() {
+		return nil, status.Error(codes.Internal, "Должен быть только один MAIN_ADMIN!!!")
 	}
 
 	s.mu.Lock()
