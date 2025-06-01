@@ -20,7 +20,15 @@ enum By {
 
 message Empty {}
 
-message UserResponse {
+service Authentication {
+    rpc SignupUser (SignupRequest) returns (Empty);
+    rpc LoginUser (Email) returns (GetResponse);
+    rpc UpdateUser (UpdateRequest) returns (Empty);
+    rpc UpdatePassword (UpdatePasswordRequest) returns (Empty);
+    rpc DeleteUser (Email) returns (Empty);
+}
+
+message GetResponse {
     uint32 id = 1;
     string email = 2;
     string first_name = 3;
@@ -28,14 +36,6 @@ message UserResponse {
     optional string patronymic = 5;
     Role role = 6;
     string password = 7;
-}
-
-service Authentication {
-    rpc SignupUser (SignupRequest) returns (UserResponse);
-    rpc LoginUser (Email) returns (UserResponse);
-    rpc UpdateUser (UpdateRequest) returns (UserResponse);
-    rpc UpdatePassword (UpdatePasswordRequest) returns (UserResponse);
-    rpc DeleteUser (Email) returns (Empty);
 }
 
 message SignupRequest {
@@ -68,9 +68,10 @@ message UpdatePasswordRequest {
 }
 
 service AdminService {
-    rpc CreateUser (CreateRequestAdmin) returns (UserResponse);
-    rpc GetUser (GetRequestAdmin) returns (GetUserResponseAdmin);
-    rpc UpdateUser (UpdateRequestAdmin) returns (UserResponse);
+    rpc CreateUser (CreateRequestAdmin) returns (Empty);
+    rpc GetUser (GetRequestAdmin) returns (GetResponseAdmin);
+    rpc UpdateUser (UpdateRequestAdmin) returns (Empty);
+    rpc UpdateRole (UpdateRoleRequestAdmin) returns (Empty);
     rpc DeleteUser (DeleteRequestAdmin) returns (Empty);
 }
 
@@ -91,8 +92,8 @@ message GetRequestAdmin {
     string admin_password = 4;
 }
 
-message GetUserResponseAdmin {
-    repeated UserResponse users = 1;
+message GetResponseAdmin {
+    repeated GetResponse users = 1;
 }
 
 message UpdateRequestAdmin {
@@ -104,6 +105,15 @@ message UpdateRequestAdmin {
     string admin_email = 6;
     string admin_password = 7;
     uint32 id = 8;
+    Role role = 9;
+}
+
+message UpdateRoleRequestAdmin {
+    Role old_role = 1;
+    Role new_role = 2;
+    string admin_email = 3;
+    string admin_password = 4;
+    uint32 id = 5;
 }
 
 message DeleteRequestAdmin {
