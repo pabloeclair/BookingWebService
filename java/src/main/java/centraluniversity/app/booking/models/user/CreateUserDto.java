@@ -1,4 +1,4 @@
-package centraluniversity.app.booking.models.admin;
+package centraluniversity.app.booking.models.user;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
@@ -28,6 +28,9 @@ public class CreateUserDto {
 
     @NotBlank
     private String password;
+
+    @NotBlank
+    private String role;
 
     @Email
     @NotBlank

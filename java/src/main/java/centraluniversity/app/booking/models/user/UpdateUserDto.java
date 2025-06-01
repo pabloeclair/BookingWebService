@@ -1,4 +1,4 @@
-package centraluniversity.app.booking.models.admin;
+package centraluniversity.app.booking.models.user;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
@@ -10,15 +10,22 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class GetUserRequestDto {
+public class UpdateUserDto {
     
-    @NotBlank
-    @JsonProperty("sort_by")
-    private String sortBy;
+    @Email
+    private String email;
 
-    @NotBlank
-    @JsonProperty("sort_key")
-    private String sortKey;
+    @JsonProperty("first_name")
+    private String firstName;
+
+    @JsonProperty("second_name")
+    private String secondName;
+
+    private String patronymic;
+
+    private String password;
+
+    private String role;
 
     @Email
     @NotBlank

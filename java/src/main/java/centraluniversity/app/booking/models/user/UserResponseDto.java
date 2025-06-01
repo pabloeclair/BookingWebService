@@ -1,4 +1,4 @@
-package centraluniversity.app.booking.models;
+package centraluniversity.app.booking.models.user;
 
 import centraluniversity.app.booking.pb.Role;
 import lombok.*;

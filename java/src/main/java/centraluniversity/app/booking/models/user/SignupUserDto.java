@@ -1,19 +1,17 @@
-package centraluniversity.app.booking.models.admin;
+package centraluniversity.app.booking.models.user;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import centraluniversity.app.booking.pb.Role;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class UpdateUserDto {
-
-    @NotBlank
-    private Integer id;
+public class SignupUserDto {
     
     @Email
     @NotBlank
@@ -32,12 +30,5 @@ public class UpdateUserDto {
     @NotBlank
     private String password;
 
-    @Email
-    @NotBlank
-    @JsonProperty("admin_email")
-    private String adminEmail;
-
-    @NotBlank
-    @JsonProperty("admin_password")
-    private String adminPassword;
+    private Role role;
 }
