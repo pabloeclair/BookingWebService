@@ -3,9 +3,9 @@ package centraluniversity.app.booking.services;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import centraluniversity.app.booking.models.UserResponseDto;
-import centraluniversity.app.booking.models.auth.SignupUserDto;
 import centraluniversity.app.booking.models.exception.HttpStatusException;
+import centraluniversity.app.booking.models.user.SignupUserDto;
+import centraluniversity.app.booking.models.user.UserResponseDto;
 import centraluniversity.app.booking.pb.AuthenticationGrpc;
 import centraluniversity.app.booking.pb.Email;
 import centraluniversity.app.booking.pb.SignupRequest;

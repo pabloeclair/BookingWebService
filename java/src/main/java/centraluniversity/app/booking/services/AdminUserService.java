@@ -5,9 +5,8 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import centraluniversity.app.booking.models.UserResponseDto;
-import centraluniversity.app.booking.models.admin.*;
 import centraluniversity.app.booking.models.exception.HttpStatusException;
+import centraluniversity.app.booking.models.user.*;
 import centraluniversity.app.booking.pb.AdminServiceGrpc;
 import centraluniversity.app.booking.pb.*;
 import io.grpc.ManagedChannel;
@@ -94,13 +93,13 @@ public class AdminUserService {
         return parseToDto(res);
     }
 
-    public UserResponseDto[] getUser(GetUserRequestDto user) {
+    public GetUserDto getUser(String email, String key, By sortBy, String sortKey) {
 
         GetRequestAdmin req = GetRequestAdmin.newBuilder()
-            .setAdminEmail(user.getAdminEmail())
-            .setAdminPassword(user.getAdminPassword())
-            .setSortBy(By.valueOf(user.getSortBy()))
-            .setSortKey(user.getSortKey())
+            .setAdminEmail(email)
+            .setAdminPassword(key)
+            .setSortBy(sortBy)
+            .setSortKey(sortKey)
             .build();
 
         GetUserResponseAdmin res;
@@ -127,10 +126,10 @@ public class AdminUserService {
             result[i] = parseToDto(resUser);
         }
 
-        return result;
+        return new GetUserDto(result);
     }
 
-    public UserResponseDto updateUser(UpdateUserDto user) {
+    public UserResponseDto updateUser(Integer id, UpdateUserDto user) {
 
         UpdateRequestAdmin req;
         if (user.getPatronymic() == null || user.getPatronymic().isEmpty()) {
@@ -141,7 +140,7 @@ public class AdminUserService {
                 .setPassword(user.getPassword())
                 .setAdminEmail(user.getAdminEmail())
                 .setAdminPassword(user.getAdminPassword())
-                .setId(user.getId())
+                .setId(id)
                 .build();
         } else {
             req = UpdateRequestAdmin.newBuilder()
@@ -152,7 +151,7 @@ public class AdminUserService {
                 .setPassword(user.getPassword())
                 .setAdminEmail(user.getAdminEmail())
                 .setAdminPassword(user.getAdminPassword())
-                .setId(user.getId())
+                .setId(id)
                 .build();
         }
 
@@ -178,12 +177,12 @@ public class AdminUserService {
         return parseToDto(res);
     }
 
-    public void deleteUser(DeleteUserDto user) {
+    public void deleteUser(Integer id, String email, String key) {
 
         DeleteRequestAdmin req = DeleteRequestAdmin.newBuilder()
-            .setAdminEmail(user.getAdminEmail())
-            .setAdminPassword(user.getAdminPassword())
-            .setId(user.getId())
+            .setAdminEmail(email)
+            .setAdminPassword(key)
+            .setId(id)
             .build();
         
         try {
