@@ -34,6 +34,7 @@ func LogInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServer
 	return resp, err
 }
 
+// Создает нового пользователя с указанными администратором полями.
 func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmin) (*pb.Empty, error) {
 
 	s.mu.RLock()
@@ -66,6 +67,7 @@ func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmi
 	return nil, nil
 }
 
+// Возвращает список всех пользователей, удовлетворяющих заданному ключу.
 func (s *AdminService) GetUser(ctx context.Context, req *pb.GetRequestAdmin) (*pb.GetResponseAdmin, error) {
 
 	s.mu.RLock()
@@ -90,6 +92,8 @@ func (s *AdminService) GetUser(ctx context.Context, req *pb.GetRequestAdmin) (*p
 	return &pb.GetResponseAdmin{Users: users}, nil
 }
 
+// Обновляет информацию о пользователе по заданным полям. Притом обычные администраторы могут изменять только
+// пользователей, когда как администраторов может изменить только единственный главный администратор.
 func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmin) (*pb.Empty, error) {
 
 	s.mu.RLock()
@@ -123,14 +127,26 @@ func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmi
 	return nil, nil
 }
 
+// Удаляет указанного пользователя. Притом обычные администраторы могут удалять только
+// пользователей, когда как администраторов может удалять только единственный главный администратор.
 func (s *AdminService) DeleteUser(ctx context.Context, req *pb.DeleteRequestAdmin) (*pb.Empty, error) {
 
 	s.mu.RLock()
-	_, err := utils.ComparePassword(req.AdminEmail, req.AdminPassword, true)
+	admin, err := utils.ComparePassword(req.AdminEmail, req.AdminPassword, true)
 	s.mu.RUnlock()
-
 	if err != nil {
 		return nil, err
+	}
+
+	s.mu.RLock()
+	user, err := db.GetUserById(req.Id)
+	s.mu.RUnlock()
+	if err != nil {
+		return nil, utils.CompareErrAndErrNotFound(err)
+	}
+
+	if (user.Role == pb.Role_MAIN_ADMIN.String() || user.Role == pb.Role_ADMIN.String()) && admin.Role == pb.Role_ADMIN.String() {
+		return nil, status.Error(codes.PermissionDenied, "Администратор может удалять только обычных пользователей")
 	}
 
 	s.mu.Lock()
