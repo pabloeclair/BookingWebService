@@ -1,11 +1,12 @@
 package utils
 
 import (
+	"crypto/hmac"
 	"cu_coworking_book/go/internal/db"
 	"cu_coworking_book/go/internal/pb"
+	"encoding/hex"
 	"errors"
 
-	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"google.golang.org/grpc/codes"
@@ -20,14 +21,24 @@ func CompareErrAndErrNotFound(err error) error {
 	}
 }
 
-func ComparePassword(email string, password []byte, admin bool) (db.User, error) {
+func ComparePassword(email string, password string, admin bool) (db.User, error) {
 	user, err := db.GetUserByEmail(email)
 
 	if err != nil {
 		return user, CompareErrAndErrNotFound(err)
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), password); err != nil {
+	hash1, err := hex.DecodeString(password)
+	if err != nil {
+		return user, status.Error(codes.Internal, "ошибка декодирования sha256 (1)")
+	}
+
+	hash2, err := hex.DecodeString(user.Password)
+	if err != nil {
+		return user, status.Error(codes.Internal, "ошибка декодирования sha256 (2)")
+	}
+
+	if !hmac.Equal(hash1, hash2) {
 		return user, status.Error(codes.Unauthenticated, "неверный пароль")
 	}
 

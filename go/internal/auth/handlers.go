@@ -10,7 +10,6 @@ import (
 	"strings"
 	"sync"
 
-	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -35,17 +34,12 @@ func LogInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServer
 
 func (s *AuthServer) SignupUser(ctx context.Context, req *pb.SignupRequest) (*pb.UserResponse, error) {
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), 12)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
 	user := db.User{
 		Email:      req.GetEmail(),
 		FirstName:  strings.ToLower(req.GetFirstName()),
 		SecondName: strings.ToLower(req.GetSecondName()),
 		Patronymic: strings.ToLower(req.GetPatronymic()),
-		Password:   string(hashedPassword),
+		Password:   req.GetPassword(),
 	}
 
 	s.mu.Lock()
@@ -64,7 +58,7 @@ func (s *AuthServer) SignupUser(ctx context.Context, req *pb.SignupRequest) (*pb
 func (s *AuthServer) LoginUser(ctx context.Context, req *pb.Email) (*pb.UserResponse, error) {
 
 	s.mu.RLock()
-	res, err := utils.ComparePassword(req.GetEmail(), []byte(req.GetPassword()), false)
+	res, err := utils.ComparePassword(req.GetEmail(), req.GetPassword(), false)
 	s.mu.RUnlock()
 	if err != nil {
 		return nil, err
@@ -76,7 +70,7 @@ func (s *AuthServer) LoginUser(ctx context.Context, req *pb.Email) (*pb.UserResp
 func (s *AuthServer) UpdateUser(ctx context.Context, req *pb.UpdateRequest) (*pb.UserResponse, error) {
 
 	s.mu.RLock()
-	_, err := utils.ComparePassword(req.GetEmail(), []byte(req.GetPassword()), false)
+	_, err := utils.ComparePassword(req.GetEmail(), req.GetPassword(), false)
 	s.mu.RUnlock()
 	if err != nil {
 		return nil, err
@@ -105,7 +99,7 @@ func (s *AuthServer) UpdateUser(ctx context.Context, req *pb.UpdateRequest) (*pb
 func (s *AuthServer) DeleteUser(ctx context.Context, req *pb.Email) (*pb.Empty, error) {
 
 	s.mu.RLock()
-	_, err := utils.ComparePassword(req.GetEmail(), []byte(req.GetPassword()), false)
+	_, err := utils.ComparePassword(req.GetEmail(), req.GetPassword(), false)
 	s.mu.RUnlock()
 
 	if err != nil {

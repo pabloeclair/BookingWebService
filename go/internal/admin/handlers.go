@@ -10,7 +10,6 @@ import (
 	"strings"
 	"sync"
 
-	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -36,16 +35,11 @@ func LogInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServer
 func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmin) (*pb.UserResponse, error) {
 
 	s.mu.RLock()
-	_, err := utils.ComparePassword(req.AdminEmail, []byte(req.AdminPassword), true)
+	_, err := utils.ComparePassword(req.AdminEmail, req.AdminPassword, true)
 	s.mu.RUnlock()
 
 	if err != nil {
 		return nil, err
-	}
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), 12)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	user := db.User{
@@ -53,7 +47,7 @@ func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmi
 		FirstName:  req.GetFirstName(),
 		SecondName: req.GetSecondName(),
 		Patronymic: req.GetPatronymic(),
-		Password:   string(hashedPassword),
+		Password:   req.GetPassword(),
 	}
 
 	s.mu.Lock()
@@ -73,7 +67,7 @@ func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmi
 func (s *AdminService) GetUser(ctx context.Context, req *pb.GetRequestAdmin) (*pb.GetUserResponseAdmin, error) {
 
 	s.mu.RLock()
-	_, err := utils.ComparePassword(req.AdminEmail, []byte(req.AdminPassword), true)
+	_, err := utils.ComparePassword(req.AdminEmail, req.AdminPassword, true)
 	s.mu.RUnlock()
 	if err != nil {
 		return nil, err
@@ -97,7 +91,7 @@ func (s *AdminService) GetUser(ctx context.Context, req *pb.GetRequestAdmin) (*p
 func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmin) (*pb.UserResponse, error) {
 
 	s.mu.RLock()
-	_, err := utils.ComparePassword(req.AdminEmail, []byte(req.AdminPassword), true)
+	_, err := utils.ComparePassword(req.AdminEmail, req.AdminPassword, true)
 	s.mu.RUnlock()
 	if err != nil {
 		return nil, err
@@ -126,7 +120,7 @@ func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmi
 func (s *AdminService) DeleteUser(ctx context.Context, req *pb.DeleteRequestAdmin) (*pb.Empty, error) {
 
 	s.mu.RLock()
-	_, err := utils.ComparePassword(req.GetAdminEmail(), []byte(req.GetAdminPassword()), true)
+	_, err := utils.ComparePassword(req.AdminEmail, req.AdminPassword, true)
 	s.mu.RUnlock()
 
 	if err != nil {
