@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.*;
 import centraluniversity.app.booking.models.user.CreateUserDto;
 import centraluniversity.app.booking.models.user.GetUserAdminDto;
 import centraluniversity.app.booking.models.user.UpdateUserDto;
-import centraluniversity.app.booking.models.user.GetUserDto;
 import centraluniversity.app.booking.pb.By;
 import centraluniversity.app.booking.services.AdminUserService;
 import lombok.RequiredArgsConstructor;
@@ -20,8 +19,8 @@ public class AdminUserController {
     private final AdminUserService adminService;
 
     @PostMapping()
-    public GetUserDto createUser(@Valid @RequestBody CreateUserDto user) {
-        return adminService.createUser(user);
+    public void createUser(@Valid @RequestBody CreateUserDto user) {
+        adminService.createUser(user);
     }
 
     @GetMapping("/{by}/{sort_key}")
@@ -33,8 +32,8 @@ public class AdminUserController {
     }
 
     @PutMapping("/{id}")
-    public GetUserDto updateUser(@PathVariable("id") Integer id, @RequestBody @Valid UpdateUserDto user) {
-        return adminService.updateUser(id, user);
+    public void updateUser(@PathVariable("id") Integer id, @RequestBody @Valid UpdateUserDto user) {
+        adminService.updateUser(id, user);
     }
 
     @DeleteMapping("/{id}")
