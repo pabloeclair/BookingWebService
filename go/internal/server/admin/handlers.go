@@ -54,6 +54,7 @@ func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmi
 		SecondName: req.GetSecondName(),
 		Patronymic: req.GetPatronymic(),
 		Password:   req.GetPassword(),
+		Role:       pb.Role_USER.String(),
 	}
 
 	s.mu.Lock()
@@ -71,7 +72,7 @@ func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmi
 }
 
 // Возвращает список всех пользователей, удовлетворяющих заданному ключу.
-func (s *AdminService) GetUser(ctx context.Context, req *pb.GetRequestAdmin) (*pb.GetResponseAdmin, error) {
+func (s *AdminService) SortUser(ctx context.Context, req *pb.GetRequestAdmin) (*pb.GetResponseArray, error) {
 	// - Если ни один пользователь с указанной почтой не найден, вернется ошибка NotFound.
 
 	// - Если почта администратора не найдена — NotFound.
@@ -99,7 +100,34 @@ func (s *AdminService) GetUser(ctx context.Context, req *pb.GetRequestAdmin) (*p
 		users = append(users, utils.ParseToResult(res[r]))
 	}
 
-	return &pb.GetResponseAdmin{Users: users}, nil
+	return &pb.GetResponseArray{Users: users}, nil
+}
+
+// Возвращает информацию о пользователе по id.
+func (s *AdminService) GetUserById(ctx context.Context, req *pb.Email) (*pb.GetResponse, error) {
+	// - Если пользователь с указанным id не найден, вернется ошибка NotFound.
+
+	// - Если почта администратора не найдена — NotFound.
+	// - Если пароль администратора не совпал — Unauthenticated.
+
+	// При любых других ошибках – Internal.
+	// Показатель успеха — информация о найденном пользователе.
+
+	s.mu.RLock()
+	_, err := utils.ComparePassword(req.Email, req.Password, true)
+	s.mu.RUnlock()
+	if err != nil {
+		return nil, err
+	}
+
+	s.mu.RLock()
+	res, err := db.GetUserById(req.Id)
+	s.mu.RUnlock()
+	if err != nil {
+		return nil, utils.CompareErrAndErrNotFound(err)
+	}
+
+	return utils.ParseToResult(res), nil
 }
 
 // Обновляет информацию о пользователе по заданным полям.
@@ -136,6 +164,7 @@ func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmi
 	}
 
 	user := db.User{
+		ID:         req.Id,
 		Email:      req.GetEmail(),
 		FirstName:  strings.ToLower(req.GetFirstName()),
 		SecondName: strings.ToLower(req.GetSecondName()),
@@ -143,7 +172,7 @@ func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmi
 	}
 
 	s.mu.Lock()
-	err = db.UpdateUser(req.GetId(), user)
+	err = db.UpdateUser(user)
 	s.mu.Unlock()
 	if err != nil {
 		if errors.Is(err, db.ErrBadRequest) {
