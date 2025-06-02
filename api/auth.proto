@@ -20,6 +20,12 @@ enum By {
 
 message Empty {}
 
+message Email {
+    string email = 1;
+    string password = 2;
+    uint32 id = 3;
+}
+
 service Authentication {
     rpc SignupUser (SignupRequest) returns (Id);
     rpc LoginUser (Email) returns (GetResponse);
@@ -50,12 +56,6 @@ message SignupRequest {
     string password = 5;
 }
 
-message Email {
-    string email = 1;
-    string password = 2;
-    uint32 id = 3;
-}
-
 message UpdateRequest {
     string email = 1;
     string first_name = 2;
@@ -74,7 +74,8 @@ message UpdatePasswordRequest {
 
 service AdminService {
     rpc CreateUser (CreateRequestAdmin) returns (Empty);
-    rpc GetUser (GetRequestAdmin) returns (GetResponseAdmin);
+    rpc SortUser (GetRequestAdmin) returns (GetResponseArray);
+    rpc GetUserById (Email) returns (GetResponse);
     rpc UpdateUser (UpdateRequestAdmin) returns (Empty);
     rpc UpdateRole (UpdateRoleRequestAdmin) returns (Empty);
     rpc DeleteUser (DeleteRequestAdmin) returns (Empty);
@@ -97,7 +98,7 @@ message GetRequestAdmin {
     string admin_password = 4;
 }
 
-message GetResponseAdmin {
+message GetResponseArray {
     repeated GetResponse users = 1;
 }
 
