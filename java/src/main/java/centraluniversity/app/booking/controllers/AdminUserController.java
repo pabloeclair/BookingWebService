@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import centraluniversity.app.booking.models.user.CreateUserDto;
 import centraluniversity.app.booking.models.user.GetUserAdminDto;
 import centraluniversity.app.booking.models.user.GetUserDto;
+import centraluniversity.app.booking.models.user.UpdateRoleUserDto;
 import centraluniversity.app.booking.models.user.UpdateUserDto;
 import centraluniversity.app.booking.pb.By;
 import centraluniversity.app.booking.services.AdminUserService;
@@ -59,6 +60,12 @@ public class AdminUserController {
         user.setId(id);
 
         adminService.updateUser(user);
+    }
+
+    @PutMapping("/role/{id}")
+    public void updateRole(@PathVariable("id") Integer id,
+            @RequestBody @Valid UpdateRoleUserDto user) {
+        adminService.updateRole(id, user);
     }
 
     @DeleteMapping("/{id}")

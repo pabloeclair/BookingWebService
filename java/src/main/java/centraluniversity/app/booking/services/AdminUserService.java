@@ -195,6 +195,36 @@ public class AdminUserService {
         }
     }
 
+    public void updateRole(int id, UpdateRoleUserDto user) {
+
+        UpdateRoleRequestAdmin req = UpdateRoleRequestAdmin.newBuilder()
+            .setAdminEmail(user.getAdminEmail())
+            .setAdminPassword(user.getAdminPassword())
+            .setNewRole(Role.valueOf(user.getNewRole()))
+            .setOldRole(Role.valueOf(user.getOldRole()))
+            .setId(id).build();
+
+        try {
+            this.stub.updateRole(req);
+        } catch (StatusRuntimeException e) {
+            Status status = e.getStatus();
+            switch (status.getCode()) {
+                case NOT_FOUND:
+                    throw new HttpStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+                case UNAUTHENTICATED:
+                    throw new HttpStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
+                case PERMISSION_DENIED:
+                    throw new HttpStatusException(HttpStatus.FORBIDDEN, e.getMessage());
+                case INVALID_ARGUMENT:
+                    throw new HttpStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+                case ALREADY_EXISTS:
+                    throw new HttpStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+                default:
+                    throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+            }
+        }
+    }
+
     public void deleteUser(int id, String email, String key) {
 
         DeleteRequestAdmin req = DeleteRequestAdmin.newBuilder()
