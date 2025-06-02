@@ -25,8 +25,8 @@ public class AuthController {
 
     @GetMapping()
     public GetUserDto login(
-        @RequestParam(name = "email", required = true) String email,
-        @RequestParam(name = "key", required = true) String key) throws Exception {
+            @RequestParam(name = "email", required = true) String email,
+            @RequestParam(name = "key", required = true) String key) throws Exception {
         return authService.getUserByEmail(email, key);
     }
 

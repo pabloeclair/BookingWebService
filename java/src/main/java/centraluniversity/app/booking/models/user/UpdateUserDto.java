@@ -11,6 +11,8 @@ import lombok.Setter;
 @Getter
 @Setter
 public class UpdateUserDto {
+
+    private int id;
     
     @Email
     private String email;

@@ -52,7 +52,7 @@ public class AdminUserService {
     public void createUser(CreateUserDto user) {
 
         CreateRequestAdmin req;
-        if (user.getPatronymic() == null || user.getPatronymic().isEmpty()) {
+        if (user.getPatronymic() == null) {
             req = CreateRequestAdmin.newBuilder()
                 .setEmail(user.getEmail())
                 .setFirstName(user.getFirstName())
@@ -90,7 +90,7 @@ public class AdminUserService {
         } 
     }
 
-    public GetUserAdminDto getUser(String email, String key, By sortBy, String sortKey) {
+    public GetUserAdminDto sortUser(String email, String key, By sortBy, String sortKey) {
 
         GetRequestAdmin req = GetRequestAdmin.newBuilder()
             .setAdminEmail(email)
@@ -99,9 +99,9 @@ public class AdminUserService {
             .setSortKey(sortKey)
             .build();
 
-        GetResponseAdmin res;
+        GetResponseArray res;
         try {
-            res = this.stub.getUser(req);
+            res = this.stub.sortUser(req);
         } catch (StatusRuntimeException e) {
             Status status = e.getStatus();
             switch (status.getCode()) {
@@ -126,10 +126,34 @@ public class AdminUserService {
         return new GetUserAdminDto(result);
     }
 
-    public void updateUser(Integer id, UpdateUserDto user) {
+    public GetUserDto getUserById(int id, String email, String key) {
+
+        Email req = Email.newBuilder().setEmail(email).setPassword(key).setId(id).build();
+
+        GetResponse res;
+        try {
+            res = this.stub.getUserById(req);
+        } catch (StatusRuntimeException e) {
+            Status status = e.getStatus();
+            switch (status.getCode()) {
+                case NOT_FOUND:
+                    throw new HttpStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+                case UNAUTHENTICATED:
+                    throw new HttpStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
+                case PERMISSION_DENIED:
+                    throw new HttpStatusException(HttpStatus.FORBIDDEN, e.getMessage());
+                default:
+                    throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+            }
+        }
+
+        return parseToDto(res); 
+    }
+
+    public void updateUser(UpdateUserDto user) {
 
         UpdateRequestAdmin req;
-        if (user.getPatronymic() == null || user.getPatronymic().isEmpty()) {
+        if (user.getPatronymic() == null) {
             req = UpdateRequestAdmin.newBuilder()
                 .setEmail(user.getEmail())
                 .setFirstName(user.getFirstName())
@@ -137,7 +161,7 @@ public class AdminUserService {
                 .setPassword(user.getPassword())
                 .setAdminEmail(user.getAdminEmail())
                 .setAdminPassword(user.getAdminPassword())
-                .setId(id)
+                .setId(user.getId())
                 .build();
         } else {
             req = UpdateRequestAdmin.newBuilder()
@@ -148,7 +172,7 @@ public class AdminUserService {
                 .setPassword(user.getPassword())
                 .setAdminEmail(user.getAdminEmail())
                 .setAdminPassword(user.getAdminPassword())
-                .setId(id)
+                .setId(user.getId())
                 .build();
         }
 
@@ -171,7 +195,7 @@ public class AdminUserService {
         }
     }
 
-    public void deleteUser(Integer id, String email, String key) {
+    public void deleteUser(int id, String email, String key) {
 
         DeleteRequestAdmin req = DeleteRequestAdmin.newBuilder()
             .setAdminEmail(email)
