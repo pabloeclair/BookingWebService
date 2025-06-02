@@ -49,11 +49,11 @@ func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmi
 	}
 
 	user := db.User{
-		Email:      req.GetEmail(),
-		FirstName:  req.GetFirstName(),
-		SecondName: req.GetSecondName(),
-		Patronymic: req.GetPatronymic(),
-		Password:   req.GetPassword(),
+		Email:      req.Email,
+		FirstName:  req.FirstName,
+		SecondName: req.SecondName,
+		Patronymic: *req.Patronymic,
+		Password:   req.Password,
 		Role:       pb.Role_USER.String(),
 	}
 
@@ -164,10 +164,10 @@ func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmi
 
 	user := db.User{
 		ID:         req.Id,
-		Email:      req.GetEmail(),
-		FirstName:  strings.ToLower(req.GetFirstName()),
-		SecondName: strings.ToLower(req.GetSecondName()),
-		Patronymic: strings.ToLower(req.GetPatronymic()),
+		Email:      req.Email,
+		FirstName:  strings.ToLower(req.FirstName),
+		SecondName: strings.ToLower(req.SecondName),
+		Patronymic: strings.ToLower(*req.Patronymic),
 	}
 
 	s.mu.Lock()
