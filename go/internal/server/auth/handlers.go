@@ -35,6 +35,8 @@ func LogInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServer
 
 // Регистрирует нового пользователя.
 func (s *AuthServer) SignupUser(ctx context.Context, req *pb.SignupRequest) (*pb.Id, error) {
+	// Первый пользователь автоматически становится MAIN_ADMIN, а остальные последующие — USER.
+
 	// - Если пользователь с указанной почтой уже существует, то вернется ошибка AlreadyExists.
 
 	// При любых других ошибках – Internal.
@@ -46,6 +48,7 @@ func (s *AuthServer) SignupUser(ctx context.Context, req *pb.SignupRequest) (*pb
 		SecondName: strings.ToLower(req.GetSecondName()),
 		Patronymic: strings.ToLower(req.GetPatronymic()),
 		Password:   req.GetPassword(),
+		Role:       pb.Role_USER.String(),
 	}
 
 	s.mu.Lock()
@@ -96,6 +99,7 @@ func (s *AuthServer) UpdateUser(ctx context.Context, req *pb.UpdateRequest) (*pb
 	}
 
 	user := db.User{
+		ID:         req.Id,
 		Email:      req.GetEmail(),
 		FirstName:  strings.ToLower(req.GetFirstName()),
 		SecondName: strings.ToLower(req.GetSecondName()),
@@ -103,7 +107,7 @@ func (s *AuthServer) UpdateUser(ctx context.Context, req *pb.UpdateRequest) (*pb
 	}
 
 	s.mu.Lock()
-	err = db.UpdateUser(req.GetId(), user)
+	err = db.UpdateUser(user)
 	s.mu.Unlock()
 	if err != nil {
 		if errors.Is(err, db.ErrBadRequest) {
