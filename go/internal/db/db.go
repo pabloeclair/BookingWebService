@@ -203,7 +203,7 @@ func GetUserByKey(sortBy *pb.By, sortValue string) ([]User, error) {
 		query += " WHERE " + strings.ToLower(sortBy.String()) + " LIKE $1"
 	}
 
-	if err := db.GetContext(ctx, &res, query, "%"+sortValue+"%"); err != nil {
+	if err := db.SelectContext(ctx, &res, query, "%"+sortValue+"%"); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return res, fmt.Errorf("%w: пользователь с полем %s = %s не существует", ErrNotFound, sortBy.String(), sortValue)
 		}
@@ -212,10 +212,13 @@ func GetUserByKey(sortBy *pb.By, sortValue string) ([]User, error) {
 	return res, nil
 }
 
-func UpdateUser(id uint32, user User) error {
+func UpdateUser(user User) error {
 
-	_, err := GetUserByEmail(user.Email)
-	if !errors.Is(err, sql.ErrNoRows) {
+	test, err := GetUserById(user.ID)
+	if err != nil {
+		return fmt.Errorf("updating user: %w", err)
+	}
+	if _, err := GetUserByEmail(user.Email); !errors.Is(err, sql.ErrNoRows) && test.Email != user.Email {
 		if err == nil {
 			return fmt.Errorf("%w: пользователь с почтой %s уже существует", ErrBadRequest, user.Email)
 		}
@@ -230,12 +233,12 @@ func UpdateUser(id uint32, user User) error {
 	defer db.Close()
 
 	query := `UPDATE users 
-		SET email = :email, first_name := first_name, second_name := second_name, 
-		patronymic := patronymic WHERE id := id`
+		SET email = :email, first_name = :first_name, second_name = :second_name, 
+		patronymic = :patronymic WHERE id = :id`
 
 	if _, err := db.NamedExecContext(ctx, query, &user); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("%w: пользователь с id = %d не существует", ErrNotFound, id)
+			return fmt.Errorf("%w: пользователь с id = %d не существует", ErrNotFound, user.ID)
 		}
 		return fmt.Errorf("updating user: update error: %w", err)
 	}
