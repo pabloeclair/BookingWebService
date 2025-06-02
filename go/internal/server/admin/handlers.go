@@ -137,10 +137,9 @@ func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmi
 	// Гарантируется, что MAIN_ADMIN будет единственным.
 
 	// - Если ADMIN попытается изменить ADMIN или MAIN_ADMIN, то вернется ошибка PermissionDenied.
-	// - Если MAIN_ADMIN попытается изменить другого MAIN_ADMIN, то вернется Internal, т.к. должен
-	// быть только один MAIN_ADMIN.
 	// - Если изменяемый пользователь не найден — NotFound.
-	// - Если новая почта изменяемого пользователя уже существует — BadRequest.
+	// - Если новая почта изменяемого пользователя уже существует — AlreadyExists.
+	// - Если администратор попробует изменить самого себя — InvalidArgument.
 
 	// - Если почта администратора не найдена — NotFound.
 	// - Если пароль администратора не совпал — Unauthenticated.
@@ -156,11 +155,11 @@ func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmi
 	}
 
 	if (req.Role == pb.Role_MAIN_ADMIN || req.Role == pb.Role_ADMIN) && admin.Role == pb.Role_ADMIN.String() {
-		return nil, status.Error(codes.PermissionDenied, "Администратор может изменять только обычных пользователей")
+		return nil, status.Error(codes.PermissionDenied, "администратор может изменять только обычных пользователей")
 	}
 
-	if req.Role == pb.Role_MAIN_ADMIN && admin.Role == pb.Role_MAIN_ADMIN.String() {
-		return nil, status.Error(codes.Internal, "Должен быть только один MAIN_ADMIN!!!")
+	if req.Email == admin.Email {
+		return nil, status.Error(codes.InvalidArgument, "администратор не может изменять самого себя")
 	}
 
 	user := db.User{
@@ -184,16 +183,78 @@ func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmi
 	return nil, nil
 }
 
-// Удаляет указанного пользователя. Притом обычные администраторы могут удалять только
-// пользователей, когда как администраторов может удалять только единственный главный администратор.
+// Обновляет роль указанного пользователя.
+func (s *AdminService) UpdateRole(ctx context.Context, req *pb.UpdateRoleRequestAdmin) (*pb.Empty, error) {
+	// ADMIN не может изменять роли.
+	// MAIN_ADMIN может изменять роли ADMIN и USER.
+	// Т.к. гарантируется, что MAIN_ADMIN будет единственным, то при назначении кого-то на
+	// MAIN_ADMIN, то первоначальный главный администратор станет обычным ADMIN.
+
+	// - Если ADMIN попытается изменить чью-то роль, то вернется ошибка PermissionDenied.
+	// - Если администратор попробует изменить самого себя — InvalidArgument.
+	// - Если изменяемый пользователь не найден — NotFound.
+
+	// - Если почта администратора не найдена — NotFound.
+	// - Если пароль администратора не совпал — Unauthenticated.
+
+	// При любых других ошибках – Internal.
+	// Показатель успеха — отсутствие ошибки.
+
+	s.mu.RLock()
+	admin, err := utils.ComparePassword(req.AdminEmail, req.AdminPassword, true)
+	s.mu.RUnlock()
+	if err != nil {
+		return nil, err
+	}
+
+	if admin.Role == pb.Role_ADMIN.String() {
+		return nil, status.Error(codes.PermissionDenied, "администратор не может изменять роль пользователей")
+	}
+
+	s.mu.RLock()
+	user, err := db.GetUserById(req.Id)
+	s.mu.RUnlock()
+	if err != nil {
+		return nil, utils.CompareErrAndErrNotFound(err)
+	}
+
+	if user.Email == admin.Email {
+		return nil, status.Error(codes.InvalidArgument, "администратор не может изменять собственную роль")
+	}
+
+	user.Role = req.NewRole.String()
+
+	s.mu.Lock()
+	err = db.UpdateUser(user)
+	s.mu.Unlock()
+	if err != nil {
+		if errors.Is(err, db.ErrBadRequest) {
+			return nil, status.Error(codes.AlreadyExists, err.Error())
+		}
+		return nil, utils.CompareErrAndErrNotFound(err)
+	}
+
+	if req.NewRole == pb.Role_MAIN_ADMIN {
+		admin.Role = pb.Role_ADMIN.String()
+
+		s.mu.Lock()
+		err = db.UpdateUser(admin)
+		s.mu.Unlock()
+		if err != nil {
+			return nil, utils.CompareErrAndErrNotFound(err)
+		}
+	}
+	return nil, nil
+}
+
+// Удаляет указанного пользователя.
 func (s *AdminService) DeleteUser(ctx context.Context, req *pb.DeleteRequestAdmin) (*pb.Empty, error) {
 	// ADMIN могут удалять только USER.
 	// MAIN_ADMIN может удалять ADMIN и USER.
 	// Гарантируется, что MAIN_ADMIN будет единственным.
 
 	// - Если ADMIN попытается удалить ADMIN или MAIN_ADMIN, то вернется ошибка PermissionDenied.
-	// - Если MAIN_ADMIN попытается изменить другого MAIN_ADMIN, то вернется Internal, т.к. должен
-	// быть только один MAIN_ADMIN.
+	// - Если администратор попробует удалить самого себя — InvalidArgument.
 	// - Если ни один пользователь с указанной почтой не найден, вернется ошибка NotFound.
 
 	// - Если почта администратора не найдена — NotFound.
@@ -216,12 +277,12 @@ func (s *AdminService) DeleteUser(ctx context.Context, req *pb.DeleteRequestAdmi
 		return nil, utils.CompareErrAndErrNotFound(err)
 	}
 
-	if (user.Role == pb.Role_MAIN_ADMIN.String() || user.Role == pb.Role_ADMIN.String()) && admin.Role == pb.Role_ADMIN.String() {
-		return nil, status.Error(codes.PermissionDenied, "Администратор может удалять только обычных пользователей")
+	if user.Email == admin.Email {
+		return nil, status.Error(codes.InvalidArgument, "администратор не может удалять самого себя")
 	}
 
-	if user.Role == pb.Role_MAIN_ADMIN.String() && admin.Role == pb.Role_MAIN_ADMIN.String() {
-		return nil, status.Error(codes.Internal, "Должен быть только один MAIN_ADMIN!!!")
+	if (user.Role == pb.Role_MAIN_ADMIN.String() || user.Role == pb.Role_ADMIN.String()) && admin.Role == pb.Role_ADMIN.String() {
+		return nil, status.Error(codes.PermissionDenied, "администратор может удалять только обычных пользователей")
 	}
 
 	s.mu.Lock()
