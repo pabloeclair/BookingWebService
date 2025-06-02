@@ -46,7 +46,7 @@ func main() {
 		s = grpc.NewServer(grpc.UnaryInterceptor(auth.LogInterceptor))
 		pb.RegisterAuthenticationServer(s, &auth.AuthServer{})
 	} else {
-		s = grpc.NewServer(grpc.UnaryInterceptor(auth.LogInterceptor))
+		s = grpc.NewServer(grpc.UnaryInterceptor(admin.LogInterceptor))
 		pb.RegisterAdminServiceServer(s, &admin.AdminService{})
 	}
 	log.Printf("GRPC %s сервер запущен по адресу %s", type_, lis.Addr().String())
