@@ -5,11 +5,13 @@ import org.springframework.stereotype.Service;
 
 import centraluniversity.app.booking.models.exception.HttpStatusException;
 import centraluniversity.app.booking.models.user.SignupUserDto;
-import centraluniversity.app.booking.models.user.UserResponseDto;
+import centraluniversity.app.booking.models.user.GetUserDto;
+import centraluniversity.app.booking.models.user.IdDto;
 import centraluniversity.app.booking.pb.AuthenticationGrpc;
 import centraluniversity.app.booking.pb.Email;
+import centraluniversity.app.booking.pb.GetResponse;
+import centraluniversity.app.booking.pb.Id;
 import centraluniversity.app.booking.pb.SignupRequest;
-import centraluniversity.app.booking.pb.UserResponse;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
@@ -44,7 +46,7 @@ public class AuthService {
      * @return UserResponseDto - full user information
      * @throws Exception
      */
-    public UserResponseDto createUser(SignupUserDto user) {
+    public IdDto createUser(SignupUserDto user) {
 
         SignupRequest req;
         if (user.getPatronymic() == null || user.getPatronymic().isEmpty()) {
@@ -64,7 +66,7 @@ public class AuthService {
                 .build();
         }
 
-        UserResponse res;
+        Id res;
         try {
             res = this.stub.signupUser(req);
         } catch (StatusRuntimeException e) {
@@ -75,15 +77,7 @@ public class AuthService {
             throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         } 
         
-        return new UserResponseDto(
-            res.getId(),
-            res.getEmail(),
-            res.getFirstName(),
-            res.getSecondName(),
-            res.getPatronymic(),
-            res.getPassword(),
-            res.getRole()
-        );  
+        return new IdDto(res.getId());  
     }
 
     /**
@@ -92,10 +86,10 @@ public class AuthService {
      * @return UserResponseDto - full user information
      * @throws Exception
      */
-    public UserResponseDto getUserByEmail(String email, String password) throws Exception {
+    public GetUserDto getUserByEmail(String email, String password) throws Exception {
 
         Email req = Email.newBuilder().setEmail(email).setPassword(password).build();
-        UserResponse res;
+        GetResponse res;
         try {
             res = this.stub.loginUser(req);
         } catch (StatusRuntimeException e) {
@@ -110,7 +104,7 @@ public class AuthService {
             }
         }
         
-        return new UserResponseDto(
+        return new GetUserDto(
             res.getId(),
             res.getEmail(),
             res.getFirstName(),

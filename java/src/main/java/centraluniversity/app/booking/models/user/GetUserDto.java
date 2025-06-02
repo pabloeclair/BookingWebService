@@ -1,13 +1,20 @@
 package centraluniversity.app.booking.models.user;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import centraluniversity.app.booking.pb.Role;
+import lombok.*;
 
 @Getter
 @Setter
 @AllArgsConstructor
+@NoArgsConstructor
 public class GetUserDto {
     
-    private UserResponseDto[] users;
+    private int id;
+    private String email;
+    private String firstName;
+    private String secondName;
+    private String patronymic;
+    private String password;
+    private Role role;
+    
 }

@@ -22,8 +22,8 @@ public class AdminUserService {
     private ManagedChannel channel;
     private AdminServiceGrpc.AdminServiceBlockingStub stub;
 
-    private UserResponseDto parseToDto(UserResponse user) {
-        return new UserResponseDto(
+    private GetUserDto parseToDto(GetResponse user) {
+        return new GetUserDto(
             user.getId(),
             user.getEmail(),
             user.getFirstName(),
@@ -49,7 +49,7 @@ public class AdminUserService {
         }
     }
 
-    public UserResponseDto createUser(CreateUserDto user) {
+    public void createUser(CreateUserDto user) {
 
         CreateRequestAdmin req;
         if (user.getPatronymic() == null || user.getPatronymic().isEmpty()) {
@@ -73,9 +73,8 @@ public class AdminUserService {
                 .build();
         }
 
-        UserResponse res;
         try {
-            res = this.stub.createUser(req);
+            this.stub.createUser(req);
         } catch (StatusRuntimeException e) {
             Status status = e.getStatus();
             switch (status.getCode()) {
@@ -89,11 +88,9 @@ public class AdminUserService {
                     throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
             }
         } 
-
-        return parseToDto(res);
     }
 
-    public GetUserDto getUser(String email, String key, By sortBy, String sortKey) {
+    public GetUserAdminDto getUser(String email, String key, By sortBy, String sortKey) {
 
         GetRequestAdmin req = GetRequestAdmin.newBuilder()
             .setAdminEmail(email)
@@ -102,7 +99,7 @@ public class AdminUserService {
             .setSortKey(sortKey)
             .build();
 
-        GetUserResponseAdmin res;
+        GetResponseAdmin res;
         try {
             res = this.stub.getUser(req);
         } catch (StatusRuntimeException e) {
@@ -119,17 +116,17 @@ public class AdminUserService {
             }
         }
 
-        List<UserResponse> users = res.getUsersList();
-        UserResponseDto[] result = new UserResponseDto[res.getUsersCount()];
+        List<GetResponse> users = res.getUsersList();
+        GetUserDto[] result = new GetUserDto[res.getUsersCount()];
         for (int i = 0; i < res.getUsersCount(); i++) {
-            UserResponse resUser = users.get(i);
+            GetResponse resUser = users.get(i);
             result[i] = parseToDto(resUser);
         }
 
-        return new GetUserDto(result);
+        return new GetUserAdminDto(result);
     }
 
-    public UserResponseDto updateUser(Integer id, UpdateUserDto user) {
+    public void updateUser(Integer id, UpdateUserDto user) {
 
         UpdateRequestAdmin req;
         if (user.getPatronymic() == null || user.getPatronymic().isEmpty()) {
@@ -155,9 +152,8 @@ public class AdminUserService {
                 .build();
         }
 
-        UserResponse res;
         try {
-            res = this.stub.updateUser(req);
+            this.stub.updateUser(req);
         } catch (StatusRuntimeException e) {
             Status status = e.getStatus();
             switch (status.getCode()) {
@@ -173,8 +169,6 @@ public class AdminUserService {
                     throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
             }
         }
-
-        return parseToDto(res);
     }
 
     public void deleteUser(Integer id, String email, String key) {
