@@ -45,7 +45,7 @@ func ComparePassword(email string, password string, admin bool) (db.User, error)
 		return user, status.Error(codes.Unauthenticated, "неверный пароль")
 	}
 
-	if admin && (user.Role != pb.Role_ADMIN.String() || user.Role != pb.Role_MAIN_ADMIN.String()) {
+	if admin && (user.Role != pb.Role_ADMIN.String() && user.Role != pb.Role_MAIN_ADMIN.String()) {
 		return user, status.Error(codes.PermissionDenied, "доступ запрещен")
 	}
 	return user, nil
