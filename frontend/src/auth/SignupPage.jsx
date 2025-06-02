@@ -1,6 +1,7 @@
 import './Auth.css'
 import {Link} from 'react-router';
 import {useState} from "react";
+import generateSHA256Hash from '../GenerateHash';
 
 function SignupPage() {
     const [error, setError] = useState(null);
@@ -64,14 +65,22 @@ function SignupForm({ setUser, setError }) {
         console.log('Регистрация:', form);
 
         try {
-            const response = await fetch('http://localhost:8080/users/signup', {
+            const hashPassword = await generateSHA256Hash(form.password);
+            const req = {
+                first_name: form.first_name,
+                second_name: form.second_name,
+                patronymic: form.patronymic,
+                email: form.email,
+                password: hashPassword,
+            };
+            const response = await fetch('http://localhost:8080/users', {
                 method: 'POST',
-                body: JSON.stringify(form),
+                body: JSON.stringify(req),
                 headers: {
                     'Content-Type': 'application/json; charset=UTF-8',
                 },
             });
-            const data = await response.json();
+
             if (!response.ok) {
                 let errorMessage;
                 if (response.status == 400) {
