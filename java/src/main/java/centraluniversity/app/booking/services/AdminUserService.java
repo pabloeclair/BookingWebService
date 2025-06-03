@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 
 import centraluniversity.app.booking.models.exception.HttpStatusException;
 import centraluniversity.app.booking.models.user.*;
-import centraluniversity.app.booking.pb.AdminServiceGrpc;
 import centraluniversity.app.booking.pb.*;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -22,7 +21,7 @@ public class AdminUserService {
     private ManagedChannel channel;
     private AdminServiceGrpc.AdminServiceBlockingStub stub;
 
-    private GetUserDto parseToDto(GetResponse user) {
+    private GetUserDto parseToDto(GetResponse user) throws HttpStatusException {
         return new GetUserDto(
             user.getId(),
             user.getEmail(),
@@ -49,7 +48,7 @@ public class AdminUserService {
         }
     }
 
-    public void createUser(CreateUserDto user) {
+    public void createUser(CreateUserDto user) throws HttpStatusException {
 
         CreateRequestAdmin req;
         if (user.getPatronymic() == null) {
@@ -79,7 +78,7 @@ public class AdminUserService {
             Status status = e.getStatus();
             switch (status.getCode()) {
                 case ALREADY_EXISTS:
-                    throw new HttpStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+                    throw new HttpStatusException(HttpStatus.CONFLICT, e.getMessage());
                 case UNAUTHENTICATED:
                     throw new HttpStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
                 case PERMISSION_DENIED:
@@ -90,7 +89,7 @@ public class AdminUserService {
         } 
     }
 
-    public GetUserAdminDto sortUser(String email, String key, By sortBy, String sortKey) {
+    public GetUserAdminDto sortUser(String email, String key, By sortBy, String sortKey) throws HttpStatusException {
 
         GetRequestAdmin req = GetRequestAdmin.newBuilder()
             .setAdminEmail(email)
@@ -126,7 +125,7 @@ public class AdminUserService {
         return new GetUserAdminDto(result);
     }
 
-    public GetUserDto getUserById(int id, String email, String key) {
+    public GetUserDto getUserById(int id, String email, String key) throws HttpStatusException {
 
         Email req = Email.newBuilder().setEmail(email).setPassword(key).setId(id).build();
 
@@ -150,7 +149,7 @@ public class AdminUserService {
         return parseToDto(res); 
     }
 
-    public void updateUser(UpdateUserDto user) {
+    public void updateUser(UpdateUserDto user) throws HttpStatusException {
 
         UpdateRequestAdmin req;
         if (user.getPatronymic() == null) {
@@ -188,14 +187,14 @@ public class AdminUserService {
                 case PERMISSION_DENIED:
                     throw new HttpStatusException(HttpStatus.FORBIDDEN, e.getMessage());
                 case ALREADY_EXISTS:
-                    throw new HttpStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+                    throw new HttpStatusException(HttpStatus.CONFLICT, e.getMessage());
                 default:
                     throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
             }
         }
     }
 
-    public void updateRole(int id, UpdateRoleUserDto user) {
+    public void updateRole(int id, UpdateRoleUserDto user) throws HttpStatusException {
 
         UpdateRoleRequestAdmin req = UpdateRoleRequestAdmin.newBuilder()
             .setAdminEmail(user.getAdminEmail())
@@ -218,14 +217,14 @@ public class AdminUserService {
                 case INVALID_ARGUMENT:
                     throw new HttpStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
                 case ALREADY_EXISTS:
-                    throw new HttpStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+                    throw new HttpStatusException(HttpStatus.CONFLICT, e.getMessage());
                 default:
                     throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
             }
         }
     }
 
-    public void deleteUser(int id, String email, String key) {
+    public void deleteUser(int id, String email, String key) throws HttpStatusException {
 
         DeleteRequestAdmin req = DeleteRequestAdmin.newBuilder()
             .setAdminEmail(email)

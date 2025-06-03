@@ -46,7 +46,7 @@ public class AuthService {
      * @return UserResponseDto - full user information
      * @throws Exception
      */
-    public IdDto createUser(SignupUserDto user) {
+    public IdDto createUser(SignupUserDto user) throws HttpStatusException {
 
         SignupRequest req;
         if (user.getPatronymic() == null || user.getPatronymic().isEmpty()) {
@@ -72,7 +72,7 @@ public class AuthService {
         } catch (StatusRuntimeException e) {
             Status status = e.getStatus();
             if (status.getCode() == Status.Code.ALREADY_EXISTS) {
-                throw new HttpStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+                throw new HttpStatusException(HttpStatus.CONFLICT, e.getMessage());
             } 
             throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         } 
@@ -86,7 +86,7 @@ public class AuthService {
      * @return UserResponseDto - full user information
      * @throws Exception
      */
-    public GetUserDto getUserByEmail(String email, String password) throws Exception {
+    public GetUserDto getUserByEmail(String email, String password) throws HttpStatusException {
 
         Email req = Email.newBuilder().setEmail(email).setPassword(password).build();
         GetResponse res;

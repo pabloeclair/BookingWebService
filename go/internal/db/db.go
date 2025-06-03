@@ -17,7 +17,7 @@ import (
 
 var (
 	ErrConDB      = errors.New("connection to the database failed")
-	ErrBadRequest = errors.New("400 error")
+	ErrBadRequest = errors.New("409 error")
 	ErrNotFound   = errors.New("404 error")
 )
 

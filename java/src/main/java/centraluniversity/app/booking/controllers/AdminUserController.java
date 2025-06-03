@@ -11,8 +11,11 @@ import centraluniversity.app.booking.models.user.UpdateRoleUserDto;
 import centraluniversity.app.booking.models.user.UpdateUserDto;
 import centraluniversity.app.booking.pb.By;
 import centraluniversity.app.booking.services.AdminUserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
+@Tag(name = "AdminUser API", description = "API управления пользователями")
 @RestController
 @RequestMapping("/admin/users")
 @RequiredArgsConstructor
@@ -20,11 +23,13 @@ public class AdminUserController {
     
     private final AdminUserService adminService;
 
+    @Operation(summary = "Регистрация нового пользователя")
     @PostMapping()
     public void createUser(@Valid @RequestBody CreateUserDto user) throws Exception {
         adminService.createUser(user);
     }
 
+    @Operation(summary = "Получение всех пользователей по ключу")
     @GetMapping("/{by}/{sort_key}")
     public GetUserAdminDto getUser(@PathVariable("sort_key") String sortKey,
             @RequestParam(name = "email", required = true) String email,
@@ -33,6 +38,7 @@ public class AdminUserController {
         return adminService.sortUser(email, key, By.valueOf(sortBy.toUpperCase()), sortKey);
     }
 
+    @Operation(summary = "Редактирование пользователя")
     @PutMapping("/{id}")
     public void updateUser(@PathVariable("id") Integer id,
             @RequestBody @Valid UpdateUserDto user) throws Exception {
@@ -62,12 +68,14 @@ public class AdminUserController {
         adminService.updateUser(user);
     }
 
+    @Operation(summary = "Изменение роли пользователя")
     @PutMapping("/role/{id}")
     public void updateRole(@PathVariable("id") Integer id,
             @RequestBody @Valid UpdateRoleUserDto user) {
         adminService.updateRole(id, user);
     }
 
+    @Operation(summary = "Удаление пользователя")
     @DeleteMapping("/{id}")
     public void deleteUser(@PathVariable("id") Integer id,
             @RequestParam(name = "email", required = true) String email,
