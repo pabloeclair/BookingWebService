@@ -46,7 +46,7 @@ public class AuthService {
      * @return UserResponseDto - full user information
      * @throws Exception
      */
-    public IdDto createUser(SignupUserDto user) {
+    public IdDto createUser(SignupUserDto user) throws HttpStatusException {
 
         SignupRequest req;
         if (user.getPatronymic() == null || user.getPatronymic().isEmpty()) {
@@ -86,7 +86,7 @@ public class AuthService {
      * @return UserResponseDto - full user information
      * @throws Exception
      */
-    public GetUserDto getUserByEmail(String email, String password) throws Exception {
+    public GetUserDto getUserByEmail(String email, String password) throws HttpStatusException {
 
         Email req = Email.newBuilder().setEmail(email).setPassword(password).build();
         GetResponse res;
