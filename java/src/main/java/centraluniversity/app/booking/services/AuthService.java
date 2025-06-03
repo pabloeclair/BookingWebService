@@ -27,7 +27,7 @@ public class AuthService {
 
     @PostConstruct
     public void connectToServer() {
-        this.channel = ManagedChannelBuilder.forAddress("auth", 7001)
+        this.channel = ManagedChannelBuilder.forAddress("auth-service", 7001)
             .usePlaintext()
             .build();
         this.stub = AuthenticationGrpc.newBlockingStub(channel);

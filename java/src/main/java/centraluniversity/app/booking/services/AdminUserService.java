@@ -36,7 +36,7 @@ public class AdminUserService {
 
     @PostConstruct
     public void connectToServer() {
-        this.channel = ManagedChannelBuilder.forAddress("admin", 7002)
+        this.channel = ManagedChannelBuilder.forAddress("admin-service", 7002)
             .usePlaintext()
             .build();
         this.stub = AdminServiceGrpc.newBlockingStub(channel);
