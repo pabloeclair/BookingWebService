@@ -6,9 +6,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -17,8 +17,8 @@ import (
 
 var (
 	ErrConDB      = errors.New("connection to the database failed")
-	ErrBadRequest = errors.New("db error")
-	ErrNotFound   = errors.New("db error")
+	ErrBadRequest = errors.New("400 error")
+	ErrNotFound   = errors.New("404 error")
 )
 
 type User struct {
@@ -86,7 +86,6 @@ func CreateTable() error {
 		return fmt.Errorf("creating table: create error: %w", err)
 	}
 
-	log.Println("Created users table")
 	return nil
 }
 
@@ -106,44 +105,47 @@ func DeleteTable() error {
 	return nil
 }
 
-func CreateUser(user User) (User, error) {
+func CreateUser(user User) (uint32, error) {
 
-	var res User
+	if _, err := GetUserByEmail(user.Email); !errors.Is(err, ErrNotFound) {
+		if err != nil {
+			return 0, fmt.Errorf("creating user: ошибка проверки почты: %w", err)
+		}
+		return 0, fmt.Errorf("%w: пользователь с почтой %s уже существует", ErrBadRequest, user.Email)
+	}
+
 	ctx, cancel, db, err := connectToDb()
 	if err != nil {
-		return res, err
+		return 0, err
 	}
 	defer cancel()
 	defer db.Close()
-
-	if _, err = GetUserByEmail(user.Email); !errors.Is(err, ErrNotFound) {
-		if err != nil {
-			return res, fmt.Errorf("creating user: email existence verification error: %w", err)
-		}
-		return res, fmt.Errorf("%w: user with the email %s already exists", ErrBadRequest, user.Email)
-	}
 
 	var id uint32
 	if err = db.GetContext(ctx, &id, `SELECT id FROM users LIMIT 1`); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			user.Role = pb.Role_MAIN_ADMIN.String()
 		} else {
-			return res, fmt.Errorf("creating user: select error: %w", err)
+			return 0, fmt.Errorf("creating user: select error: %w", err)
 		}
 	}
 
 	queryInsert := `INSERT INTO users (email, first_name, second_name, patronymic, password, role) 
 		VALUES (:email, :first_name, :second_name, :patronymic, :password, :role);`
 	if _, err = db.NamedExecContext(ctx, queryInsert, &user); err != nil {
-		return res, fmt.Errorf("creating user: insert error: %w", err)
+		return 0, fmt.Errorf("creating user: insert error: %w", err)
 	}
 
-	res, err = GetUserByEmail(user.Email)
-	if err != nil {
-		return res, fmt.Errorf("creating user: %w", err)
+	var idRes uint32
+	querySelect := `SELECT id FROM users WHERE email = $1;`
+	if err := db.GetContext(ctx, &idRes, querySelect, user.Email); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, fmt.Errorf("%w: пользователь с id = %d не существует", ErrNotFound, idRes)
+		}
+		return 0, fmt.Errorf("getting user by id: select error: %w", err)
 	}
 
-	return res, nil
+	return idRes, nil
 }
 
 func GetUserByEmail(email string) (User, error) {
@@ -159,7 +161,7 @@ func GetUserByEmail(email string) (User, error) {
 	query := `SELECT * FROM users WHERE email = $1;`
 	if err := db.GetContext(ctx, &res, query, email); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return res, fmt.Errorf("%w: user with the email %s doesn't exist", ErrNotFound, email)
+			return res, fmt.Errorf("%w: пользователь с почтой %s не существует", ErrNotFound, email)
 		}
 		return res, fmt.Errorf("getting user by email: select error: %w", err)
 	}
@@ -179,16 +181,16 @@ func GetUserById(id uint32) (User, error) {
 	query := `SELECT * FROM users WHERE id = $1;`
 	if err := db.GetContext(ctx, &res, query, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return res, fmt.Errorf("%w: user with the id %d doesn't exist", ErrNotFound, id)
+			return res, fmt.Errorf("%w: пользователь с id = %d не существует", ErrNotFound, id)
 		}
 		return res, fmt.Errorf("getting user by id: select error: %w", err)
 	}
 	return res, nil
 }
 
-func UpdateUser(oldEmail string, user User) (User, error) {
+func GetUserByKey(sortBy *pb.By, sortValue string) ([]User, error) {
 
-	var res User
+	var res []User
 	ctx, cancel, db, err := connectToDb()
 	if err != nil {
 		return res, err
@@ -196,26 +198,32 @@ func UpdateUser(oldEmail string, user User) (User, error) {
 	defer cancel()
 	defer db.Close()
 
-	query := `UPDATE users 
-		SET email = :email, first_name := first_name, second_name := second_name, 
-		patronymic := patronymic WHERE email := email`
-
-	if _, err := db.NamedExecContext(ctx, query, &user); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return res, fmt.Errorf("%w: user with the email %s doesn't exist", ErrNotFound, oldEmail)
-		}
-		return res, fmt.Errorf("updating user: update error: %w", err)
+	query := `SELECT * FROM users`
+	if sortBy != pb.By_NONE.Enum() {
+		query += " WHERE " + strings.ToLower(sortBy.String()) + " LIKE $1"
 	}
 
-	query = `SELECT * FROM users WHERE email = $1;`
-	if err := db.GetContext(ctx, &res, query, user.Email); err != nil {
-		return res, fmt.Errorf("getting user by email: select error: %w", err)
+	if err := db.SelectContext(ctx, &res, query, "%"+sortValue+"%"); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return res, fmt.Errorf("%w: пользователь с полем %s = %s не существует", ErrNotFound, sortBy.String(), sortValue)
+		}
+		return res, fmt.Errorf("getting user by id: select error: %w", err)
 	}
 	return res, nil
-
 }
 
-func DeleteUser(email string) error {
+func UpdateUser(user User) error {
+
+	test, err := GetUserById(user.ID)
+	if err != nil {
+		return fmt.Errorf("updating user: %w", err)
+	}
+	if _, err := GetUserByEmail(user.Email); !errors.Is(err, sql.ErrNoRows) && test.Email != user.Email {
+		if err == nil {
+			return fmt.Errorf("%w: пользователь с почтой %s уже существует", ErrBadRequest, user.Email)
+		}
+		return fmt.Errorf("updating user: %w", err)
+	}
 
 	ctx, cancel, db, err := connectToDb()
 	if err != nil {
@@ -224,9 +232,53 @@ func DeleteUser(email string) error {
 	defer cancel()
 	defer db.Close()
 
-	if _, err := db.ExecContext(ctx, `DELETE FROM users WHERE email = $1`, email); err != nil {
+	query := `UPDATE users 
+		SET email = :email, first_name = :first_name, second_name = :second_name, 
+		patronymic = :patronymic WHERE id = :id`
+
+	if _, err := db.NamedExecContext(ctx, query, &user); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("%w: user with the email %s doesn't exist", ErrNotFound, email)
+			return fmt.Errorf("%w: пользователь с id = %d не существует", ErrNotFound, user.ID)
+		}
+		return fmt.Errorf("updating user: update error: %w", err)
+	}
+
+	return nil
+}
+
+func UpdatePassword(id uint32, password string) error {
+
+	ctx, cancel, db, err := connectToDb()
+	if err != nil {
+		return fmt.Errorf("updating password: %w", err)
+	}
+	defer cancel()
+	defer db.Close()
+
+	query := `UPDATE users SET password = $1 WHERE id = $2`
+
+	if _, err := db.ExecContext(ctx, query, password, id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("%w: пользователь с id = %d не существует", ErrNotFound, id)
+		}
+		return fmt.Errorf("updating password: update error: %w", err)
+	}
+
+	return nil
+}
+
+func DeleteUser(id uint32) error {
+
+	ctx, cancel, db, err := connectToDb()
+	if err != nil {
+		return err
+	}
+	defer cancel()
+	defer db.Close()
+
+	if _, err := db.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("%w: пользователь с id = %d не существует", ErrNotFound, id)
 		}
 		return fmt.Errorf("deleting user: db error: %w", err)
 	}

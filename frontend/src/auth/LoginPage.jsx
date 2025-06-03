@@ -2,6 +2,8 @@ import './Auth.css'
 import {Link, useNavigate} from 'react-router';
 import {useContext, useState} from "react";
 import AuthContext from "./AuthContext.jsx";
+import generateSHA256Hash from '../GenerateHash';
+import MainAdminPage from "../admin/MainAdminPage.jsx";
 
 function LoginPage() {
 
@@ -10,13 +12,20 @@ function LoginPage() {
     const navigate = useNavigate();
     const [error, setError] = useState(null);
 
+    if (user && user.role !== 'USER') {
+        return <MainAdminPage/>;
+    }
+
     if (user) {
         return (
             <>
-                Привет user {user.header}<br/>
+                Привет user {user.first_name}<br/>
                 <button className={"form-button"} onClick={logout}>Выйти</button>
                 <br/>
-                <button className={"form-button"} onClick={() => {navigate("/signup")}}>Тест</button>
+                <button className={"form-button"} onClick={() => {
+                    navigate("/signup")
+                }}>Тест
+                </button>
             </>
         );
     }
@@ -62,13 +71,18 @@ function LoginForm({ setError }) {
         event.preventDefault();
 
         try {
-            const response = await fetch('http://localhost:8080/users/login', {
-                method: 'POST',
-                body: JSON.stringify(form),
-                headers: {
-                    'Content-Type': 'application/json; charset=UTF-8',
-                },
-            });
+            const hashPassword = await generateSHA256Hash(form.password);
+            const response = await fetch('http://localhost:8080/users?' + new URLSearchParams({
+                email: form.email,
+                key: hashPassword,
+            }).toString());
+
+            setForm(prevForm => ({
+                ...prevForm,
+                email: '',
+                password: '',
+            }))
+
             const data = await response.json();
             if (!response.ok) {
                 let errorMessage;

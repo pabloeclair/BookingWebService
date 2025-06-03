@@ -1,10 +1,41 @@
 import './Auth.css'
 import {Link} from 'react-router';
 import {useState} from "react";
+import generateSHA256Hash from '../GenerateHash';
 
 function SignupPage() {
     const [error, setError] = useState(null);
     const [user, setUser] = useState(false);
+
+    if (error) {
+        return (
+            <>
+            <div className={'form-container'}>
+                <h1>Регистрация</h1>
+                <span className={"text-gray"}>Уже есть аккаунт?</span>
+                <Link to={"../login"} className={"text-link"}>Войти</Link>
+                <br/><br/>
+                <SignupForm setUser={setUser} setError={setError}/>
+            </div>
+            <div className={'modal error'}>{error}</div>
+            </>
+        );
+    }
+
+    if (user) {
+        return (
+            <>
+            <div className={'form-container'}>
+                <h1>Регистрация</h1>
+                <span className={"text-gray"}>Уже есть аккаунт?</span>
+                <Link to={"../login"} className={"text-link"}>Войти</Link>
+                <br/><br/>
+                <SignupForm setUser={setUser} setError={setError}/>
+            </div>
+            <div className={'modal ok'}>Регистрация прошла успешна<br/>Перейдите на страницу авторизации</div>
+            </>
+        );
+    }
 
     return (
         <>
@@ -15,7 +46,6 @@ function SignupPage() {
             <br/><br/>
             <SignupForm setUser={setUser} setError={setError}/>
         </div>
-        <Modal user={user} error={error} />
         </>
     );
 }
@@ -27,7 +57,7 @@ function SignupForm({ setUser, setError }) {
         second_name: '',
         patronymic: '',
         email: '',
-        password: ''
+        password: '',
     });
 
     const handleSubmit = async (event) => {
@@ -35,16 +65,40 @@ function SignupForm({ setUser, setError }) {
         console.log('Регистрация:', form);
 
         try {
-            const response = await fetch('http://localhost:8080/users/signup', {
+            const hashPassword = await generateSHA256Hash(form.password);
+            const req = {
+                first_name: form.first_name,
+                second_name: form.second_name,
+                patronymic: form.patronymic,
+                email: form.email,
+                password: hashPassword,
+            };
+
+            setForm(prevForm => ({
+                ...prevForm,
+                first_name: '',
+                second_name: '',
+                patronymic: '',
+                email: '',
+                password: '',
+            }))
+
+            const response = await fetch('http://localhost:8080/users', {
                 method: 'POST',
-                body: JSON.stringify(form),
+                body: JSON.stringify(req),
                 headers: {
                     'Content-Type': 'application/json; charset=UTF-8',
                 },
             });
-            const data = await response.json();
+
             if (!response.ok) {
-                    throw new Error(data.errorCode);
+                let errorMessage;
+                if (response.status === 400) {
+                    errorMessage = 'Аккаунт с указанной почтой уже существует';
+                } else {
+                    errorMessage = 'Произошла серверная ошибка';
+                }
+                throw new Error(errorMessage);
             }
             setError(null);
             setUser(true)
@@ -122,19 +176,5 @@ function SignupForm({ setUser, setError }) {
         </form>
     );
 }
-
-function Modal({ user, error }) {
-    if (user) {
-        return <div className={'modal ok'}>Регистрация прошла успешна<br/>Перейдите на страницу авторизации</div>;
-    }
-    if (!error) return null;
-    switch (error) {
-        case '400 BAD_REQUEST':
-            return <div className={'modal error'}>Аккаунт с указанной почтой уже существует</div>;
-        default:
-            return <div className={'modal error'}>Произошла серверная ошибка<br/>Пожалуйста, обновите страницу или обратитесь на ресепшен на 4 этаже</div>;
-    }
-}
-
 
 export default SignupPage;

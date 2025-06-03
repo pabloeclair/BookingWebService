@@ -2,6 +2,10 @@ body {
     font: 18px "Inter";
 }
 
+button {
+    font: 18px "Inter";
+}
+
 #logo {
     height: 70px;
     width: auto;

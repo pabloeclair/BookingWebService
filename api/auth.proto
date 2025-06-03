@@ -10,35 +10,35 @@ enum Role {
     MAIN_ADMIN = 2;
 }
 
-message SignupRequest {
-    string email = 1;
-    string first_name = 2;
-    string second_name = 3;
-    optional string patronymic = 4;
-    string password = 5;
+enum By {
+    FIRST_NAME = 0;
+    SECOND_NAME = 1;
+    ROLE = 2;
+    NONE = 3;
+    EMAIL = 4;
 }
+
+message Empty {}
 
 message Email {
     string email = 1;
     string password = 2;
+    uint32 id = 3;
+}
+
+service Authentication {
+    rpc SignupUser (SignupRequest) returns (Id);
+    rpc LoginUser (Email) returns (GetResponse);
+    rpc UpdateUser (UpdateRequest) returns (Empty);
+    rpc UpdatePassword (UpdatePasswordRequest) returns (Empty);
+    rpc DeleteUser (Email) returns (Empty);
 }
 
 message Id {
     uint32 id = 1;
-    string admin_email = 2;
-    string admin_password = 3;
 }
 
-message UpdateRequest {
-    string email = 1;
-    string first_name = 2;
-    string second_name = 3;
-    optional string patronymic = 4;
-    string password = 5;
-    string old_email = 6;
-}
-
-message UserResponse {
+message GetResponse {
     uint32 id = 1;
     string email = 2;
     string first_name = 3;
@@ -48,19 +48,82 @@ message UserResponse {
     string password = 7;
 }
 
+message SignupRequest {
+    string email = 1;
+    string first_name = 2;
+    string second_name = 3;
+    optional string patronymic = 4;
+    string password = 5;
+}
+
+message UpdateRequest {
+    string email = 1;
+    string first_name = 2;
+    string second_name = 3;
+    optional string patronymic = 4;
+    string password = 5;
+    uint32 id = 6;
+}
+
 message UpdatePasswordRequest {
     string email = 1;
     string old_password = 2;
     string new_password = 3;
+    uint32 id = 4;
 }
 
-message Empty {}
+service AdminService {
+    rpc CreateUser (CreateRequestAdmin) returns (Empty);
+    rpc SortUser (GetRequestAdmin) returns (GetResponseArray);
+    rpc GetUserById (Email) returns (GetResponse);
+    rpc UpdateUser (UpdateRequestAdmin) returns (Empty);
+    rpc UpdateRole (UpdateRoleRequestAdmin) returns (Empty);
+    rpc DeleteUser (DeleteRequestAdmin) returns (Empty);
+}
 
-service Authentication {
-    rpc SignupUser (SignupRequest) returns (UserResponse);
-    rpc GetUserByEmail (Email) returns (UserResponse);
-    rpc GetUserById (Id) returns (UserResponse);
-    rpc UpdateUser (UpdateRequest) returns (UserResponse);
-    rpc UpdatePassword (UpdatePasswordRequest) returns (UserResponse);
-    rpc DeleteUser (Email) returns (Empty);
+message CreateRequestAdmin {
+    string email = 1;
+    string first_name = 2;
+    string second_name = 3;
+    optional string patronymic = 4;
+    string password = 5;
+    string admin_email = 6;
+    string admin_password = 7;
+}
+
+message GetRequestAdmin {
+    By sort_by = 1;
+    string sort_key = 2;
+    string admin_email = 3;
+    string admin_password = 4;
+}
+
+message GetResponseArray {
+    repeated GetResponse users = 1;
+}
+
+message UpdateRequestAdmin {
+    string email = 1;
+    string first_name = 2;
+    string second_name = 3;
+    optional string patronymic = 4;
+    string password = 5;
+    string admin_email = 6;
+    string admin_password = 7;
+    uint32 id = 8;
+    Role role = 9;
+}
+
+message UpdateRoleRequestAdmin {
+    Role old_role = 1;
+    Role new_role = 2;
+    string admin_email = 3;
+    string admin_password = 4;
+    uint32 id = 5;
+}
+
+message DeleteRequestAdmin {
+    uint32 id = 1;
+    string admin_email = 2;
+    string admin_password = 3;
 }

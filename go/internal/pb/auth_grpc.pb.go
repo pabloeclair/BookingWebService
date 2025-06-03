@@ -20,8 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	Authentication_SignupUser_FullMethodName     = "/Authentication/SignupUser"
-	Authentication_GetUserByEmail_FullMethodName = "/Authentication/GetUserByEmail"
-	Authentication_GetUserById_FullMethodName    = "/Authentication/GetUserById"
+	Authentication_LoginUser_FullMethodName      = "/Authentication/LoginUser"
 	Authentication_UpdateUser_FullMethodName     = "/Authentication/UpdateUser"
 	Authentication_UpdatePassword_FullMethodName = "/Authentication/UpdatePassword"
 	Authentication_DeleteUser_FullMethodName     = "/Authentication/DeleteUser"
@@ -32,8 +31,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthenticationClient interface {
 	SignupUser(ctx context.Context, in *SignupRequest, opts ...grpc.CallOption) (*UserResponse, error)
-	GetUserByEmail(ctx context.Context, in *Email, opts ...grpc.CallOption) (*UserResponse, error)
-	GetUserById(ctx context.Context, in *Id, opts ...grpc.CallOption) (*UserResponse, error)
+	LoginUser(ctx context.Context, in *Email, opts ...grpc.CallOption) (*UserResponse, error)
 	UpdateUser(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UserResponse, error)
 	UpdatePassword(ctx context.Context, in *UpdatePasswordRequest, opts ...grpc.CallOption) (*UserResponse, error)
 	DeleteUser(ctx context.Context, in *Email, opts ...grpc.CallOption) (*Empty, error)
@@ -57,20 +55,10 @@ func (c *authenticationClient) SignupUser(ctx context.Context, in *SignupRequest
 	return out, nil
 }
 
-func (c *authenticationClient) GetUserByEmail(ctx context.Context, in *Email, opts ...grpc.CallOption) (*UserResponse, error) {
+func (c *authenticationClient) LoginUser(ctx context.Context, in *Email, opts ...grpc.CallOption) (*UserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UserResponse)
-	err := c.cc.Invoke(ctx, Authentication_GetUserByEmail_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *authenticationClient) GetUserById(ctx context.Context, in *Id, opts ...grpc.CallOption) (*UserResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UserResponse)
-	err := c.cc.Invoke(ctx, Authentication_GetUserById_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Authentication_LoginUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -112,8 +100,7 @@ func (c *authenticationClient) DeleteUser(ctx context.Context, in *Email, opts .
 // for forward compatibility.
 type AuthenticationServer interface {
 	SignupUser(context.Context, *SignupRequest) (*UserResponse, error)
-	GetUserByEmail(context.Context, *Email) (*UserResponse, error)
-	GetUserById(context.Context, *Id) (*UserResponse, error)
+	LoginUser(context.Context, *Email) (*UserResponse, error)
 	UpdateUser(context.Context, *UpdateRequest) (*UserResponse, error)
 	UpdatePassword(context.Context, *UpdatePasswordRequest) (*UserResponse, error)
 	DeleteUser(context.Context, *Email) (*Empty, error)
@@ -130,11 +117,8 @@ type UnimplementedAuthenticationServer struct{}
 func (UnimplementedAuthenticationServer) SignupUser(context.Context, *SignupRequest) (*UserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SignupUser not implemented")
 }
-func (UnimplementedAuthenticationServer) GetUserByEmail(context.Context, *Email) (*UserResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetUserByEmail not implemented")
-}
-func (UnimplementedAuthenticationServer) GetUserById(context.Context, *Id) (*UserResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetUserById not implemented")
+func (UnimplementedAuthenticationServer) LoginUser(context.Context, *Email) (*UserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LoginUser not implemented")
 }
 func (UnimplementedAuthenticationServer) UpdateUser(context.Context, *UpdateRequest) (*UserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateUser not implemented")
@@ -184,38 +168,20 @@ func _Authentication_SignupUser_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Authentication_GetUserByEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Authentication_LoginUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Email)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AuthenticationServer).GetUserByEmail(ctx, in)
+		return srv.(AuthenticationServer).LoginUser(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Authentication_GetUserByEmail_FullMethodName,
+		FullMethod: Authentication_LoginUser_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthenticationServer).GetUserByEmail(ctx, req.(*Email))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Authentication_GetUserById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Id)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AuthenticationServer).GetUserById(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Authentication_GetUserById_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthenticationServer).GetUserById(ctx, req.(*Id))
+		return srv.(AuthenticationServer).LoginUser(ctx, req.(*Email))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -286,12 +252,8 @@ var Authentication_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Authentication_SignupUser_Handler,
 		},
 		{
-			MethodName: "GetUserByEmail",
-			Handler:    _Authentication_GetUserByEmail_Handler,
-		},
-		{
-			MethodName: "GetUserById",
-			Handler:    _Authentication_GetUserById_Handler,
+			MethodName: "LoginUser",
+			Handler:    _Authentication_LoginUser_Handler,
 		},
 		{
 			MethodName: "UpdateUser",
@@ -304,6 +266,222 @@ var Authentication_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteUser",
 			Handler:    _Authentication_DeleteUser_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "auth.proto",
+}
+
+const (
+	AdminService_CreateUser_FullMethodName = "/AdminService/CreateUser"
+	AdminService_GetUser_FullMethodName    = "/AdminService/GetUser"
+	AdminService_UpdateUser_FullMethodName = "/AdminService/UpdateUser"
+	AdminService_DeleteUser_FullMethodName = "/AdminService/DeleteUser"
+)
+
+// AdminServiceClient is the client API for AdminService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type AdminServiceClient interface {
+	CreateUser(ctx context.Context, in *CreateRequestAdmin, opts ...grpc.CallOption) (*Empty, error)
+	GetUser(ctx context.Context, in *GetRequestAdmin, opts ...grpc.CallOption) (*GetUserResponseAdmin, error)
+	UpdateUser(ctx context.Context, in *UpdateRequestAdmin, opts ...grpc.CallOption) (*UserResponse, error)
+	DeleteUser(ctx context.Context, in *DeleteRequestAdmin, opts ...grpc.CallOption) (*Empty, error)
+}
+
+type adminServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewAdminServiceClient(cc grpc.ClientConnInterface) AdminServiceClient {
+	return &adminServiceClient{cc}
+}
+
+func (c *adminServiceClient) CreateUser(ctx context.Context, in *CreateRequestAdmin, opts ...grpc.CallOption) (*Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, AdminService_CreateUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetUser(ctx context.Context, in *GetRequestAdmin, opts ...grpc.CallOption) (*GetUserResponseAdmin, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserResponseAdmin)
+	err := c.cc.Invoke(ctx, AdminService_GetUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) UpdateUser(ctx context.Context, in *UpdateRequestAdmin, opts ...grpc.CallOption) (*UserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UserResponse)
+	err := c.cc.Invoke(ctx, AdminService_UpdateUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeleteUser(ctx context.Context, in *DeleteRequestAdmin, opts ...grpc.CallOption) (*Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, AdminService_DeleteUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// AdminServiceServer is the server API for AdminService service.
+// All implementations must embed UnimplementedAdminServiceServer
+// for forward compatibility.
+type AdminServiceServer interface {
+	CreateUser(context.Context, *CreateRequestAdmin) (*Empty, error)
+	GetUser(context.Context, *GetRequestAdmin) (*GetUserResponseAdmin, error)
+	UpdateUser(context.Context, *UpdateRequestAdmin) (*UserResponse, error)
+	DeleteUser(context.Context, *DeleteRequestAdmin) (*Empty, error)
+	mustEmbedUnimplementedAdminServiceServer()
+}
+
+// UnimplementedAdminServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedAdminServiceServer struct{}
+
+func (UnimplementedAdminServiceServer) CreateUser(context.Context, *CreateRequestAdmin) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateUser not implemented")
+}
+func (UnimplementedAdminServiceServer) GetUser(context.Context, *GetRequestAdmin) (*GetUserResponseAdmin, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUser not implemented")
+}
+func (UnimplementedAdminServiceServer) UpdateUser(context.Context, *UpdateRequestAdmin) (*UserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateUser not implemented")
+}
+func (UnimplementedAdminServiceServer) DeleteUser(context.Context, *DeleteRequestAdmin) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteUser not implemented")
+}
+func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
+func (UnimplementedAdminServiceServer) testEmbeddedByValue()                      {}
+
+// UnsafeAdminServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to AdminServiceServer will
+// result in compilation errors.
+type UnsafeAdminServiceServer interface {
+	mustEmbedUnimplementedAdminServiceServer()
+}
+
+func RegisterAdminServiceServer(s grpc.ServiceRegistrar, srv AdminServiceServer) {
+	// If the following call pancis, it indicates UnimplementedAdminServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&AdminService_ServiceDesc, srv)
+}
+
+func _AdminService_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateRequestAdmin)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreateUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreateUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreateUser(ctx, req.(*CreateRequestAdmin))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRequestAdmin)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetUser(ctx, req.(*GetRequestAdmin))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_UpdateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateRequestAdmin)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UpdateUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_UpdateUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UpdateUser(ctx, req.(*UpdateRequestAdmin))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeleteUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteRequestAdmin)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeleteUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeleteUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeleteUser(ctx, req.(*DeleteRequestAdmin))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var AdminService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "AdminService",
+	HandlerType: (*AdminServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreateUser",
+			Handler:    _AdminService_CreateUser_Handler,
+		},
+		{
+			MethodName: "GetUser",
+			Handler:    _AdminService_GetUser_Handler,
+		},
+		{
+			MethodName: "UpdateUser",
+			Handler:    _AdminService_UpdateUser_Handler,
+		},
+		{
+			MethodName: "DeleteUser",
+			Handler:    _AdminService_DeleteUser_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

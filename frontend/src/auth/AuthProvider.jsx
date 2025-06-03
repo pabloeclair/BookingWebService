@@ -6,6 +6,7 @@ function AuthProvider({children}) {
 
     const login = (response) => setUser({
         email: response.email,
+        first_name: response.first_name,
         role: response.role
     });
     const logout = () => setUser(null);

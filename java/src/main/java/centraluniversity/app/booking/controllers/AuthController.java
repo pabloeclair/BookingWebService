@@ -2,16 +2,11 @@ package centraluniversity.app.booking.controllers;
 
 import javax.validation.Valid;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import centraluniversity.app.booking.models.auth.LoginUserDto;
-import centraluniversity.app.booking.models.auth.SignupUserDto;
-import centraluniversity.app.booking.models.auth.UserResponseDto;
+import centraluniversity.app.booking.models.user.SignupUserDto;
+import centraluniversity.app.booking.models.user.GetUserDto;
+import centraluniversity.app.booking.models.user.IdDto;
 import centraluniversity.app.booking.services.AuthService;
 import lombok.RequiredArgsConstructor;
 
@@ -23,19 +18,16 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @PostMapping("/signup")
-    public UserResponseDto signup(@Valid @RequestBody SignupUserDto userDto) throws Exception {
+    @PostMapping()
+    public IdDto signup(@Valid @RequestBody SignupUserDto userDto) throws Exception {
         return authService.createUser(userDto);
     }   
 
-    @PostMapping("/login")
-    public UserResponseDto getUserByEmail(@Valid @RequestBody LoginUserDto userDto) throws Exception {
-        return authService.getUserByEmail(userDto.getEmail(), userDto.getPassword());
+    @GetMapping()
+    public GetUserDto login(
+            @RequestParam(name = "email", required = true) String email,
+            @RequestParam(name = "key", required = true) String key) throws Exception {
+        return authService.getUserByEmail(email, key);
     }
 
-    // TODO: update for admin 
-    @GetMapping("/{id}")
-    public UserResponseDto getUserById(@PathVariable int id) throws Exception {
-        return authService.getUserById(id);
-    }
 }

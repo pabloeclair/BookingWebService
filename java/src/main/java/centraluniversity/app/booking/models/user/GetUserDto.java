@@ -1,4 +1,6 @@
-package centraluniversity.app.booking.models.auth;
+package centraluniversity.app.booking.models.user;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import centraluniversity.app.booking.pb.Role;
 import lombok.*;
@@ -7,12 +9,17 @@ import lombok.*;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserResponseDto {
+public class GetUserDto {
     
     private int id;
     private String email;
+    
+    @JsonProperty("first_name")
     private String firstName;
+
+    @JsonProperty("second_name")
     private String secondName;
+    
     private String patronymic;
     private String password;
     private Role role;

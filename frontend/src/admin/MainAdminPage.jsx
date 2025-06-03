@@ -1,0 +1,31 @@
+import "./Admin.css"
+import {useNavigate} from "react-router";
+import {useContext} from "react";
+import AuthContext from "../auth/AuthContext.jsx";
+import LoginPage from "../auth/LoginPage.jsx";
+
+function MainAdminPage() {
+
+    const user = useContext(AuthContext).user;
+    const navigate = useNavigate();
+
+    if (!user) {
+        return <LoginPage/>;
+    }
+
+    console.log(user)
+    return (
+        <div id={'admin-container'}>
+            <span className={'text-path'}>Главная</span>
+            <h1>Добро пожаловать,<br/>{user.first_name}</h1><br/>
+            <div className={'buttons-container'}>
+                <button onClick={() => navigate('/admin/personal-account')} className={'button-navigate'}>👤 Личный кабинет</button>
+                <button onClick={() => navigate('/admin/users')} className={'button-navigate'}>👥 Пользователи</button>
+                <button onClick={() => navigate('/admin/places')} className={'button-navigate'}>🏢 Места бронирования</button>
+                <button onClick={() => navigate('/admin/books')} className={'button-navigate'}>📅 Записи бронирования</button>
+            </div>
+        </div>
+    );
+}
+
+export default MainAdminPage;

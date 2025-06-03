@@ -11,24 +11,37 @@ services:
     volumes:
       - postgres_data:/data
 
-  grpc:
+  auth-service:
     build: 
       context: .
-      target: grpc
-    container_name: grpc
+      target: auth
+    container_name: auth-service
     environment:
       - DSN=${DSN}
       - SQL_TIMEOUT=${SQL_TIMEOUT}
     ports:
-      - "7676:7676"
+      - "7001:7001"
     depends_on:
       - db
   
-  bookingapi:
+  admin-service:
+    build: 
+      context: .
+      target: admin
+    container_name: admin-service
+    environment:
+      - DSN=${DSN}
+      - SQL_TIMEOUT=${SQL_TIMEOUT}
+    ports:
+      - "7002:7002"
+    depends_on:
+      - db
+  
+  booking-api:
     build: 
       context: .
       target: web
-    container_name: bookingapi
+    container_name: booking-api
     environment:
       - JAVA_SOURCE=${JAVA_SOURCE}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -36,7 +49,8 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - grpc
+      - admin-service
+      - auth-service
 
   frontend:
     build: ./frontend
@@ -44,7 +58,7 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - bookingapi
+      - booking-api
 
 volumes:
   postgres_data:
