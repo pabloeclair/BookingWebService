@@ -11,11 +11,11 @@ services:
     volumes:
       - postgres_data:/data
 
-  auth_service:
+  auth-service:
     build: 
       context: .
       target: auth
-    container_name: auth
+    container_name: auth-service
     environment:
       - DSN=${DSN}
       - SQL_TIMEOUT=${SQL_TIMEOUT}
@@ -24,11 +24,11 @@ services:
     depends_on:
       - db
   
-  admin_service:
+  admin-service:
     build: 
       context: .
       target: admin
-    container_name: admin
+    container_name: admin-service
     environment:
       - DSN=${DSN}
       - SQL_TIMEOUT=${SQL_TIMEOUT}
@@ -37,11 +37,11 @@ services:
     depends_on:
       - db
   
-  bookingapi:
+  booking-api:
     build: 
       context: .
       target: web
-    container_name: bookingapi
+    container_name: booking-api
     environment:
       - JAVA_SOURCE=${JAVA_SOURCE}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -49,8 +49,8 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - admin_service
-      - auth_service
+      - admin-service
+      - auth-service
 
   frontend:
     build: ./frontend
@@ -58,7 +58,7 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - bookingapi
+      - booking-api
 
 volumes:
   postgres_data:
