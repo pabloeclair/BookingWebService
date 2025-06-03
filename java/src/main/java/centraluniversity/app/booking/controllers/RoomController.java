@@ -23,21 +23,18 @@ public class RoomController {
     
     @Operation(summary = "Создание новой комнаты")
     @PostMapping("/admin/rooms")
-    public void createRoom(CreateRoomDto room) {
+    public void createRoom(@RequestBody @Valid CreateRoomDto room) {
         roomService.createRoom(room);
     }
 
     @Operation(summary = "Получение всех аудиторий")
     @GetMapping("/rooms")
-    public List<Room> getAllRooms() {
-        return roomService.getAllRooms();
-    }
-
-    @Operation(summary = "Получение аудиторий по названию")
-    @GetMapping("/rooms/{part_name}")
-    public List<Room> getRoomsByName(@PathVariable("part_name") String partName) {
+    public List<Room> getRoomsByName(@RequestParam(value = "name", required = false) String partName) {
+        if (partName == null) {
+            return roomService.getAllRooms();
+        }
         return roomService.getRoomByName(partName);
-    }    
+    }  
 
     @Operation(summary = "Изменение данных об аудитории")
     @PutMapping("/admin/rooms/{id}")
