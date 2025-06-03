@@ -78,7 +78,7 @@ public class AdminUserService {
             Status status = e.getStatus();
             switch (status.getCode()) {
                 case ALREADY_EXISTS:
-                    throw new HttpStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+                    throw new HttpStatusException(HttpStatus.CONFLICT, e.getMessage());
                 case UNAUTHENTICATED:
                     throw new HttpStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
                 case PERMISSION_DENIED:
@@ -187,7 +187,7 @@ public class AdminUserService {
                 case PERMISSION_DENIED:
                     throw new HttpStatusException(HttpStatus.FORBIDDEN, e.getMessage());
                 case ALREADY_EXISTS:
-                    throw new HttpStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+                    throw new HttpStatusException(HttpStatus.CONFLICT, e.getMessage());
                 default:
                     throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
             }
@@ -217,7 +217,7 @@ public class AdminUserService {
                 case INVALID_ARGUMENT:
                     throw new HttpStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
                 case ALREADY_EXISTS:
-                    throw new HttpStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+                    throw new HttpStatusException(HttpStatus.CONFLICT, e.getMessage());
                 default:
                     throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
             }

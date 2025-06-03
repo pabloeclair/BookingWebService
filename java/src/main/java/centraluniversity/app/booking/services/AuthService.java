@@ -72,7 +72,7 @@ public class AuthService {
         } catch (StatusRuntimeException e) {
             Status status = e.getStatus();
             if (status.getCode() == Status.Code.ALREADY_EXISTS) {
-                throw new HttpStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+                throw new HttpStatusException(HttpStatus.CONFLICT, e.getMessage());
             } 
             throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         } 
