@@ -3,6 +3,7 @@ import {Link, useNavigate} from 'react-router';
 import {useContext, useState} from "react";
 import AuthContext from "./AuthContext.jsx";
 import generateSHA256Hash from '../GenerateHash';
+import MainAdminPage from "../admin/MainAdminPage.jsx";
 
 function LoginPage() {
 
@@ -11,13 +12,20 @@ function LoginPage() {
     const navigate = useNavigate();
     const [error, setError] = useState(null);
 
+    if (user && user.role !== 'USER') {
+        return <MainAdminPage/>;
+    }
+
     if (user) {
         return (
             <>
-                Привет user {user.header}<br/>
+                Привет user {user.first_name}<br/>
                 <button className={"form-button"} onClick={logout}>Выйти</button>
                 <br/>
-                <button className={"form-button"} onClick={() => {navigate("/signup")}}>Тест</button>
+                <button className={"form-button"} onClick={() => {
+                    navigate("/signup")
+                }}>Тест
+                </button>
             </>
         );
     }
@@ -68,6 +76,13 @@ function LoginForm({ setError }) {
                 email: form.email,
                 key: hashPassword,
             }).toString());
+
+            setForm(prevForm => ({
+                ...prevForm,
+                email: '',
+                password: '',
+            }))
+
             const data = await response.json();
             if (!response.ok) {
                 let errorMessage;

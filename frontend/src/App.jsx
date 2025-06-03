@@ -5,6 +5,7 @@ import React from "react";
 import LoginPage from "./auth/LoginPage.jsx";
 import Navigation from "./Navigation.jsx"
 import SignupPage from './auth/SignupPage.jsx';
+import MainAdminPage from './admin/MainAdminPage.jsx';
 
 function App() {
     return (
@@ -15,6 +16,7 @@ function App() {
                 <Routes>
                     <Route path={"/login"} element={<LoginPage/>}/>
                     <Route path={"/signup"} element={<SignupPage/>}/>
+                    <Route path={"/admin"} element={<MainAdminPage/>}/>
                     <Route path={"*"} element={<Navigation/>}/>
                 </Routes>
             </AuthProvider>

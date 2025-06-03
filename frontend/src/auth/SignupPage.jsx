@@ -57,7 +57,7 @@ function SignupForm({ setUser, setError }) {
         second_name: '',
         patronymic: '',
         email: '',
-        password: ''
+        password: '',
     });
 
     const handleSubmit = async (event) => {
@@ -73,6 +73,16 @@ function SignupForm({ setUser, setError }) {
                 email: form.email,
                 password: hashPassword,
             };
+
+            setForm(prevForm => ({
+                ...prevForm,
+                first_name: '',
+                second_name: '',
+                patronymic: '',
+                email: '',
+                password: '',
+            }))
+
             const response = await fetch('http://localhost:8080/users', {
                 method: 'POST',
                 body: JSON.stringify(req),
@@ -83,7 +93,7 @@ function SignupForm({ setUser, setError }) {
 
             if (!response.ok) {
                 let errorMessage;
-                if (response.status == 400) {
+                if (response.status === 400) {
                     errorMessage = 'Аккаунт с указанной почтой уже существует';
                 } else {
                     errorMessage = 'Произошла серверная ошибка';
