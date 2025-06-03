@@ -1,4 +1,4 @@
 .env
 .vscode
 .idea
-internal/pb/
+/go/internal/pb/
