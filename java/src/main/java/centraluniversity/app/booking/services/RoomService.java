@@ -94,7 +94,7 @@ public class RoomService {
 
         GetUserDto admin = authService.getUserByEmail(adminEmail, adminPassword);
         if (admin.getRole() == Role.USER) {
-            throw new HttpStatusException(HttpStatus.FORBIDDEN, "Создать комнату может только администратор");
+            throw new HttpStatusException(HttpStatus.FORBIDDEN, "Удалить комнату может только администратор");
         }
 
         roomRepository.deleteById(roomId);
