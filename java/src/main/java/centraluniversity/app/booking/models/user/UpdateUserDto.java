@@ -12,7 +12,7 @@ import lombok.Setter;
 @Setter
 public class UpdateUserDto {
 
-    private int id;
+    private Integer id;
     
     @Email
     private String email;

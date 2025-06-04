@@ -2,6 +2,7 @@ package centraluniversity.app.booking.controllers;
 
 import javax.validation.Valid;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import centraluniversity.app.booking.models.user.CreateUserDto;
@@ -24,7 +25,8 @@ public class AdminUserController {
     private final AdminUserService adminService;
 
     @Operation(summary = "Регистрация нового пользователя")
-    @PostMapping()
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public void createUser(@Valid @RequestBody CreateUserDto user) throws Exception {
         adminService.createUser(user);
     }
@@ -40,6 +42,7 @@ public class AdminUserController {
 
     @Operation(summary = "Редактирование пользователя")
     @PutMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void updateUser(@PathVariable("id") Integer id,
             @RequestBody @Valid UpdateUserDto user) throws Exception {
         GetUserDto oldUser = adminService.getUserById(id, user.getAdminEmail(), user.getAdminPassword());
@@ -70,6 +73,7 @@ public class AdminUserController {
 
     @Operation(summary = "Изменение роли пользователя")
     @PutMapping("/role/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void updateRole(@PathVariable("id") Integer id,
             @RequestBody @Valid UpdateRoleUserDto user) {
         adminService.updateRole(id, user);
@@ -77,6 +81,7 @@ public class AdminUserController {
 
     @Operation(summary = "Удаление пользователя")
     @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteUser(@PathVariable("id") Integer id,
             @RequestParam(name = "email", required = true) String email,
             @RequestParam(name = "key", required = true) String key) throws Exception {

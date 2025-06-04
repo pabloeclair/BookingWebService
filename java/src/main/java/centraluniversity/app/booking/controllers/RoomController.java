@@ -4,6 +4,7 @@ import java.util.List;
 
 import javax.validation.Valid;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import centraluniversity.app.booking.models.rooms.CreateRoomDto;
@@ -23,6 +24,7 @@ public class RoomController {
     
     @Operation(summary = "Создание новой комнаты")
     @PostMapping("/admin/rooms")
+    @ResponseStatus(HttpStatus.CREATED)
     public void createRoom(@RequestBody @Valid CreateRoomDto room) {
         roomService.createRoom(room);
     }
@@ -38,13 +40,15 @@ public class RoomController {
 
     @Operation(summary = "Изменение данных об аудитории")
     @PutMapping("/admin/rooms/{id}")
-    public void updateRoom(@PathVariable("id") Long id, @RequestBody @Valid UpdateRoomDto room) {
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void updateRoom(@PathVariable("id") Integer id, @RequestBody @Valid UpdateRoomDto room) {
         roomService.updateRoom(id, room);
     }
 
     @Operation(summary = "Удаление аудитории")
     @DeleteMapping("/admin/rooms/{id}")
-    public void deleteRoom(@PathVariable("id") Long id, 
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteRoom(@PathVariable("id") Integer id, 
             @RequestParam(name = "email", required = true) String email,
             @RequestParam(name = "key", required = true) String key) {
         roomService.deleteRoom(id, email, key);

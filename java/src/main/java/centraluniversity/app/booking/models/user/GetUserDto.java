@@ -11,7 +11,7 @@ import lombok.*;
 @NoArgsConstructor
 public class GetUserDto {
     
-    private int id;
+    private Integer id;
     private String email;
     
     @JsonProperty("first_name")

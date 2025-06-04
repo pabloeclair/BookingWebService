@@ -2,6 +2,7 @@ package centraluniversity.app.booking.controllers;
 
 import javax.validation.Valid;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import centraluniversity.app.booking.models.user.SignupUserDto;
@@ -21,13 +22,14 @@ public class AuthController {
     private final AuthService authService;
 
     @Operation(summary = "Регистрация пользователя")
-    @PostMapping()
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public IdDto signup(@Valid @RequestBody SignupUserDto userDto) throws Exception {
         return authService.createUser(userDto);
     }   
 
     @Operation(summary = "Получение пользователя по почте и паролю")
-    @GetMapping()
+    @GetMapping
     public GetUserDto login(
             @RequestParam(name = "email", required = true) String email,
             @RequestParam(name = "key", required = true) String key) throws Exception {
