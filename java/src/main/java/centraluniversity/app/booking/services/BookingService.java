@@ -3,6 +3,7 @@ package centraluniversity.app.booking.services;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -13,6 +14,8 @@ import org.springframework.stereotype.Service;
 import centraluniversity.app.booking.models.booking.Booking;
 import centraluniversity.app.booking.models.booking.BookingDto;
 import centraluniversity.app.booking.models.booking.CreateBookingDto;
+import centraluniversity.app.booking.models.booking.DateBookingDto;
+import centraluniversity.app.booking.models.booking.TimeBookingDto;
 import centraluniversity.app.booking.models.booking.UpdateBookingDto;
 import centraluniversity.app.booking.models.exception.HttpStatusException;
 import centraluniversity.app.booking.models.rooms.Room;
@@ -29,6 +32,7 @@ public class BookingService {
     private final RoomService roomService;
     private final BookingRepository bookingRepository;
     private final AdminUserService adminUserService;
+    private DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     /**
      * Проверка, либо что запрос отправлен администратором, либо что пользователь редактирует именно свою запись.
@@ -110,10 +114,48 @@ public class BookingService {
     }
     
     /**
+     * Получение всех записей по аудитории за определенную дату
+     * @param roomId
+     * @param bookingDate
+     * @return
+     */
+    public DateBookingDto getTimesByDate(Integer roomId, LocalDate bookingDate) {
+        List<Booking> bookings = bookingRepository.findByRoomIdAndBookingDateOrderByBookingStart(roomId, bookingDate);
+
+        List<TimeBookingDto> bookingTimes = new ArrayList<>();
+        for (int i = 0; i < bookings.size(); i++) {
+            TimeBookingDto time = new TimeBookingDto();
+            time.setBookingStart(bookings.get(i).getBookingStart());
+            time.setBookingEnd(bookings.get(i).getBookingEnd());
+            bookingTimes.add(time);
+        }
+        return new DateBookingDto(bookingDate, bookingTimes);
+    }
+
+    // TODO: unit-tests
+    /**
+     * Проверка на пересечения времени бронирования.
+     * @param times - список всех интервалов за день
+     * @param bookingStart
+     * @param bookingEnd
+     */
+    private void validateTimesByOneDay(List<TimeBookingDto> times, LocalTime bookingStart, LocalTime bookingEnd) {
+        for (int i = 0; i < times.size(); i++) {
+            TimeBookingDto time = times.get(i);
+            boolean startIsBad = bookingStart.isAfter(time.getBookingStart()) || bookingStart.equals(time.getBookingStart());
+            boolean endIsBad = bookingEnd.isBefore(time.getBookingEnd()) || bookingEnd.equals(time.getBookingEnd());
+            if (startIsBad || endIsBad) {
+                throw new HttpStatusException(HttpStatus.BAD_REQUEST, String.format("Уже существует бронь с %s по %s", 
+                    time.getBookingStart().format(timeFormatter), time.getBookingEnd().format(timeFormatter)));
+            }
+        }
+    }
+
+    /**
      * Сохранение новой брони пользователем или администратором.
      * @param booking - информация о брони
      * @param isAdmin
-     * @throws HttpStatusException 
+     * @throws HttpStatusException BAD_REQUEST (время брони занято), NOT_FOUND (почта/ауд. не найдена), UNAUTHORIZED (пароль не совпадает), FORBIDDEN (доступ запрещен)
      */
     public void createBooking(CreateBookingDto booking, boolean isAdmin) throws HttpStatusException {
         
@@ -121,6 +163,8 @@ public class BookingService {
         roomService.getRoomById(booking.getRoomId());
 
         validateDateTime(booking.getBookingDate(), booking.getBookingStart(), booking.getBookingEnd());
+        List<TimeBookingDto> bookingTimes = getTimesByDate(booking.getRoomId(), booking.getBookingDate()).getBookingTimes();
+        validateTimesByOneDay(bookingTimes, booking.getBookingStart(), booking.getBookingEnd());
 
         Booking bookingSql = new Booking();
         bookingSql.setUserId(booking.getUserId());
@@ -166,13 +210,15 @@ public class BookingService {
      * @param id
      * @param booking - полная информация о брони
      * @param isAdmin
-     * @throws HttpStatusException NOT_FOUND (почта/ауд. не найдена), UNAUTHORIZED (пароль не совпадает), FORBIDDEN (доступ запрещен)
+     * @throws HttpStatusException BAD_REQUEST (время брони занято), NOT_FOUND (почта/ауд. не найдена), UNAUTHORIZED (пароль не совпадает), FORBIDDEN (доступ запрещен)
      */
     public void updateBooking(Integer id, UpdateBookingDto booking, boolean isAdmin) throws HttpStatusException {
         
         auth(booking.getUserId(), booking.getEmail(), booking.getPassword(), isAdmin);
         roomService.getRoomById(booking.getRoomId());
         Booking bookingSql = getBookingById(id);
+
+        LocalTime oldBookingStart = bookingSql.getBookingStart();
 
         if (booking.getBookingDate() != null) {
             bookingSql.setBookingDate(booking.getBookingDate());
@@ -185,6 +231,15 @@ public class BookingService {
         }
 
         validateDateTime(bookingSql.getBookingDate(), bookingSql.getBookingStart(), bookingSql.getBookingEnd());
+        List<TimeBookingDto> bookingTimes = getTimesByDate(booking.getRoomId(), booking.getBookingDate()).getBookingTimes();
+        for (int i = 0; i < bookingTimes.size(); i++) {
+            if (bookingTimes.get(i).getBookingStart().equals(oldBookingStart)) {
+                bookingTimes.remove(i);
+                break;
+            }
+        }
+        validateTimesByOneDay(bookingTimes, oldBookingStart, oldBookingStart);
+        
 
         bookingRepository.save(bookingSql);
     } 
