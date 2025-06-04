@@ -22,16 +22,27 @@ public class RoomService {
     private final AuthService authService;
     private final RoomRepository roomRepository;
     
+    public Room getRoomById(Integer id) {
+        Optional<Room> room = roomRepository.findById(id);
+        if (room.isEmpty()) {
+            throw new HttpStatusException(HttpStatus.NOT_FOUND, String.format("Аудитории с id = %d не существует", id));
+        }
+        return room.get();
+    }
+
+    private void auth(String email, String password) throws HttpStatusException {
+        GetUserDto admin = authService.getUserByEmail(email, password);
+        if (admin.getRole() == Role.USER) {
+            throw new HttpStatusException(HttpStatus.FORBIDDEN, "Создать аудиторию может только администратор");
+        }
+    }
+
     public void createRoom(CreateRoomDto room) throws HttpStatusException {
 
-        GetUserDto admin = authService.getUserByEmail(room.getAdminEmail(), room.getAdminPassword());
-        if (admin.getRole() == Role.USER) {
-            throw new HttpStatusException(HttpStatus.FORBIDDEN, "Создать комнату может только администратор");
-        }
-
+        auth(room.getAdminEmail(), room.getAdminPassword());
         Optional<Room> existingRoom = roomRepository.findByName(room.getName());
         if (existingRoom.isPresent()) {
-            throw new HttpStatusException(HttpStatus.CONFLICT, "Комната с таким названием уже существует");
+            throw new HttpStatusException(HttpStatus.CONFLICT, String.format("Аудитория с названием '%s' уже существует", room.getName()));
         }
 
         Room roomSql = new Room();
@@ -53,19 +64,15 @@ public class RoomService {
         return roomRepository.findByNameContaining(name);
     }
 
-    public void updateRoom(Long roomId, UpdateRoomDto room) throws HttpStatusException {
+    public void updateRoom(Integer roomId, UpdateRoomDto room) throws HttpStatusException {
 
-        Optional<Room> optionalRoom = roomRepository.findById(roomId);
-        if (optionalRoom.isEmpty()) {
-            throw new HttpStatusException(HttpStatus.NOT_FOUND, "Комната не найдена");
-        }
-
-        Room roomSql = optionalRoom.get();
+        auth(room.getAdminEmail(), room.getAdminPassword());
+        Room roomSql = getRoomById(roomId);
         
         if (room.getName() != null) {
             Optional<Room> existingRoom = roomRepository.findByName(room.getName());
             if (existingRoom.isPresent()) {
-                throw new HttpStatusException(HttpStatus.CONFLICT, "Комната с таким названием уже существует");
+                throw new HttpStatusException(HttpStatus.CONFLICT, String.format("Аудитория с названием '%s' уже существует", room.getName()));
             }
             roomSql.setName(room.getName());
         }
@@ -85,18 +92,9 @@ public class RoomService {
         roomRepository.save(roomSql);
     }
 
-    public void deleteRoom(Long roomId, String adminEmail, String adminPassword) throws HttpStatusException {
-        
-        Optional<Room> optionalRoom = roomRepository.findById(roomId);
-        if (optionalRoom.isEmpty()) {
-            throw new HttpStatusException(HttpStatus.NOT_FOUND, "Комната не найдена");
-        }
-
-        GetUserDto admin = authService.getUserByEmail(adminEmail, adminPassword);
-        if (admin.getRole() == Role.USER) {
-            throw new HttpStatusException(HttpStatus.FORBIDDEN, "Удалить комнату может только администратор");
-        }
-
+    public void deleteRoom(Integer roomId, String adminEmail, String adminPassword) throws HttpStatusException {   
+        auth(adminEmail, adminPassword);
+        getRoomById(roomId);
         roomRepository.deleteById(roomId);
     }
 }

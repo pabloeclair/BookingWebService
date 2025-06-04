@@ -5,16 +5,16 @@ import java.time.LocalTime;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
+import centraluniversity.app.booking.models.rooms.Room;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class UpdateBookingDto {
+@AllArgsConstructor
+public class BookingDto {
     
-    @JsonProperty("user_id")
     private Integer userId;
     
     @JsonProperty("room_id")
@@ -29,10 +29,5 @@ public class UpdateBookingDto {
     @JsonProperty("booking_end")
     private LocalTime bookingEnd;
 
-    @Email
-    @NotBlank
-    private String email;
-
-    @NotBlank
-    private String password;
+    private Room room;
 }

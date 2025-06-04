@@ -1,8 +1,11 @@
 package centraluniversity.app.booking.repositories;
 
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import centraluniversity.app.booking.models.booking.Booking;
 
-public interface BookingRepository extends JpaRepository<Booking, Long> {
+public interface BookingRepository extends JpaRepository<Booking, Integer> {
+    List<Booking> findByUserId(Integer userId);
 }
