@@ -1,5 +1,8 @@
 package centraluniversity.app.booking.services;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -87,18 +90,37 @@ public class BookingService {
         }
         return result;
     }
+
+    // TODO: unit-test
+    /**
+     * Валидация даты и времени бронирования.
+     * @param bookingDate
+     * @param bookingStart
+     * @param bookingEnd
+     * @throws HttpStatusException BAD_REQUEST 
+     */
+    private void validateDateTime(LocalDate bookingDate, LocalTime bookingStart, LocalTime bookingEnd) throws HttpStatusException {
+        if (bookingDate.isBefore(LocalDate.now(ZoneId.of("Europe/Moscow")))) {
+            throw new HttpStatusException(HttpStatus.BAD_REQUEST, "Нельзя забронировать аудиторию ранее сегодняшнего дня");
+        }
+
+        if (bookingStart.isAfter(bookingEnd) || bookingStart.equals(bookingEnd)) {
+            throw new HttpStatusException(HttpStatus.BAD_REQUEST, "Время начала должна быть строго раньше времени окончания");
+        }
+    }
     
-    // TODO: сделать обработку дат
     /**
      * Сохранение новой брони пользователем или администратором.
      * @param booking - информация о брони
      * @param isAdmin
-     * @throws HttpStatusException //TODO: обновить ошибки
+     * @throws HttpStatusException 
      */
     public void createBooking(CreateBookingDto booking, boolean isAdmin) throws HttpStatusException {
         
         auth(booking.getUserId(), booking.getEmail(), booking.getPassword(), isAdmin);
         roomService.getRoomById(booking.getRoomId());
+
+        validateDateTime(booking.getBookingDate(), booking.getBookingStart(), booking.getBookingEnd());
 
         Booking bookingSql = new Booking();
         bookingSql.setUserId(booking.getUserId());
@@ -161,6 +183,8 @@ public class BookingService {
         if (booking.getBookingEnd() != null) {
             bookingSql.setBookingEnd(booking.getBookingEnd());
         }
+
+        validateDateTime(bookingSql.getBookingDate(), bookingSql.getBookingStart(), bookingSql.getBookingEnd());
 
         bookingRepository.save(bookingSql);
     } 
