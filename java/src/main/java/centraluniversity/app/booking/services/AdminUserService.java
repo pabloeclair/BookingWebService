@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import centraluniversity.app.booking.models.exception.HttpStatusException;
 import centraluniversity.app.booking.models.user.*;
 import centraluniversity.app.booking.pb.*;
+import centraluniversity.app.booking.repositories.BookingRepository;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
@@ -20,6 +21,11 @@ public class AdminUserService {
     
     private ManagedChannel channel;
     private AdminServiceGrpc.AdminServiceBlockingStub stub;
+    private final BookingRepository bookingRepository;
+
+    AdminUserService(BookingRepository bookingRepository) {
+        this.bookingRepository = bookingRepository;
+    }
 
     // TODO: unit-test
     /**
@@ -295,5 +301,7 @@ public class AdminUserService {
                     throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
             }
         }
+
+        bookingRepository.deleteByUserId(id);
     }
 }
