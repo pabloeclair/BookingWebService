@@ -27,6 +27,14 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final AdminUserService adminUserService;
 
+    /**
+     * Проверка, либо что запрос отправлен администратором, либо что пользователь редактирует именно свою запись.
+     * @param userId
+     * @param email
+     * @param password
+     * @param isAdmin
+     * @throws HttpStatusException NOT_FOUND (почта не найдена), UNAUTHORIZED (пароль не совпадает), FORBIDDEN (доступ запрещен)
+     */
     private void auth(Integer userId, String email, String password, boolean isAdmin) throws HttpStatusException {
         GetUserDto user = authService.getUserByEmail(email, password);
         if (isAdmin) {
@@ -41,6 +49,12 @@ public class BookingService {
         }
     }
 
+    /**
+     * Получение информации о брони по его id.
+     * @param id
+     * @return полная информация о брони
+     * @throws HttpStatusException NOT_FOUND (бронь не найдена)
+     */
     private Booking getBookingById(Integer id) throws HttpStatusException {
         Optional<Booking> booking = bookingRepository.findById(id);
         if (booking.isEmpty()) {
@@ -50,6 +64,11 @@ public class BookingService {
     }
 
     // TODO: unit-test
+    /**
+     * Преобразование List < Booking > в List < BookingDto >.
+     * @param bookings List < Booking >
+     * @return List < BookingDto >
+     */
     private List<BookingDto> parseToBookingDtoList(List<Booking> bookings) {
         List<BookingDto> result = new ArrayList<>();
 
@@ -69,6 +88,13 @@ public class BookingService {
         return result;
     }
     
+    // TODO: сделать обработку дат
+    /**
+     * Сохранение новой брони пользователем или администратором.
+     * @param booking - информация о брони
+     * @param isAdmin
+     * @throws HttpStatusException //TODO: обновить ошибки
+     */
     public void createBooking(CreateBookingDto booking, boolean isAdmin) throws HttpStatusException {
         
         auth(booking.getUserId(), booking.getEmail(), booking.getPassword(), isAdmin);
@@ -84,6 +110,13 @@ public class BookingService {
         bookingRepository.save(bookingSql);
     }
 
+    /**
+     * Получение всех-всех-всех броней администратором.
+     * @param adminEmail
+     * @param adminPassword
+     * @return пустой список или список с полной информацией о всех бронях
+     * @throws HttpStatusException NOT_FOUND (почта не найдена), UNAUTHORIZED (пароль не совпадает), FORBIDDEN (доступ запрещен)
+     */
     public List<BookingDto> getAllBookings(String adminEmail, String adminPassword) throws HttpStatusException {
         GetUserDto user = authService.getUserByEmail(adminEmail, adminPassword);
         if (user.getRole() == Role.USER) {
@@ -93,12 +126,26 @@ public class BookingService {
         return parseToBookingDtoList(bookings);
     }
 
+    /**
+     * Получение пользователем всех собственных броней
+     * @param email
+     * @param password
+     * @return пустой список или список с полной информацией о всех бронях
+     * @throws HttpStatusException NOT_FOUND (почта не найдена), UNAUTHORIZED (пароль не совпадает)
+     */
     public List<BookingDto> getAllBookingsByEmail(String email, String password) throws HttpStatusException {
         GetUserDto user = authService.getUserByEmail(email, password);
         List<Booking> bookings = bookingRepository.findByUserId(user.getId());
         return parseToBookingDtoList(bookings);
     }
 
+    /**
+     * Обновление информации о бронировании пользователем или администратором.
+     * @param id
+     * @param booking - полная информация о брони
+     * @param isAdmin
+     * @throws HttpStatusException NOT_FOUND (почта/ауд. не найдена), UNAUTHORIZED (пароль не совпадает), FORBIDDEN (доступ запрещен)
+     */
     public void updateBooking(Integer id, UpdateBookingDto booking, boolean isAdmin) throws HttpStatusException {
         
         auth(booking.getUserId(), booking.getEmail(), booking.getPassword(), isAdmin);
@@ -118,6 +165,14 @@ public class BookingService {
         bookingRepository.save(bookingSql);
     } 
 
+    /**
+     * Отмена бронирования пользователем или администратором.
+     * @param id
+     * @param email
+     * @param password
+     * @param isAdmin
+     * @throws HttpStatusException NOT_FOUND (почта/бронь не найдена), UNAUTHORIZED (пароль не совпадает), FORBIDDEN (доступ запрещен)
+     */
     public void deleteBooking(Integer id, String email, String password, boolean isAdmin) throws HttpStatusException {
         auth(id, email, password, isAdmin);
         bookingRepository.deleteById(id);

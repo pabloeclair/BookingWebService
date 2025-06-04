@@ -25,6 +25,7 @@ public class AuthService {
     private ManagedChannel channel;
     private AuthenticationGrpc.AuthenticationBlockingStub stub;
 
+    /* Подключение к gRPC серверу авторизации. */
     @PostConstruct
     public void connectToServer() {
         this.channel = ManagedChannelBuilder.forAddress("auth-service", 7001)
@@ -33,6 +34,7 @@ public class AuthService {
         this.stub = AuthenticationGrpc.newBlockingStub(channel);
     }
 
+    /* Отсоединение от gRPC сервера авторизации. */
     @PreDestroy
     public void shutdown() {
         if (this.channel != null) {
@@ -41,10 +43,10 @@ public class AuthService {
     }
 
     /**
-     * Create new service user
-     * @param user - signup user information
-     * @return UserResponseDto - full user information
-     * @throws Exception
+     * Регистрация нового пользователя.
+     * @param user - полная информация о пользователе
+     * @return id пользователя
+     * @throws HttpStatusException CONFLICT (почта уже существует)
      */
     public IdDto createUser(SignupUserDto user) throws HttpStatusException {
 
@@ -81,10 +83,10 @@ public class AuthService {
     }
 
     /**
-     * Get user by email
+     * Авторизация и получение информации о пользователе.
      * @param email
-     * @return UserResponseDto - full user information
-     * @throws Exception
+     * @return полная информация о пользователе
+     * @throws HttpStatusException NOT_FOUND (почта не найдена), UNAUTHORIZED (пароль не совпадает), FORBIDDEN (доступ запрещен)
      */
     public GetUserDto getUserByEmail(String email, String password) throws HttpStatusException {
 

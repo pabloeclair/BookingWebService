@@ -37,6 +37,9 @@ func LogInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServer
 func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmin) (*pb.Empty, error) {
 	// - Если пользователь с указанной почтой уже существует, то вернется ошибка AlreadyExists.
 
+	// - Если почта администратора не найдена — NotFound.
+	// - Если пароль администратора не совпал — Unauthenticated.
+
 	// При любых других ошибках – Internal.
 	// Показатель успеха — отсутствие ошибки.
 
@@ -138,7 +141,6 @@ func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmi
 
 	// - Если ADMIN попытается изменить ADMIN или MAIN_ADMIN, то вернется ошибка PermissionDenied.
 	// - Если изменяемый пользователь не найден — NotFound.
-	// - Если новая почта изменяемого пользователя уже существует — AlreadyExists.
 	// - Если администратор попробует изменить самого себя — InvalidArgument.
 
 	// - Если почта администратора не найдена — NotFound.
@@ -174,9 +176,6 @@ func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmi
 	err = db.UpdateUser(user)
 	s.mu.Unlock()
 	if err != nil {
-		if errors.Is(err, db.ErrBadRequest) {
-			return nil, status.Error(codes.AlreadyExists, err.Error())
-		}
 		return nil, utils.CompareErrAndErrNotFound(err)
 	}
 

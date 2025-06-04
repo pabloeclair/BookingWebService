@@ -21,7 +21,13 @@ public class AdminUserService {
     private ManagedChannel channel;
     private AdminServiceGrpc.AdminServiceBlockingStub stub;
 
-    private GetUserDto parseToDto(GetResponse user) throws HttpStatusException {
+    // TODO: unit-test
+    /**
+     * Преобразовывается protocol buffers GetResponse в GetUserDto.
+     * @param user - GetResponse
+     * @return user - GetUserDto
+     */
+    private GetUserDto parseToDto(GetResponse user) {
         return new GetUserDto(
             user.getId(),
             user.getEmail(),
@@ -33,6 +39,7 @@ public class AdminUserService {
         );
     }
 
+    /* Подключение к gRPC серверу авторизации. */
     @PostConstruct
     public void connectToServer() {
         this.channel = ManagedChannelBuilder.forAddress("admin-service", 7002)
@@ -41,6 +48,7 @@ public class AdminUserService {
         this.stub = AdminServiceGrpc.newBlockingStub(channel);
     }
 
+    /* Отсоединение от gRPC сервера авторизации. */
     @PreDestroy
     public void shutdown() {
         if (this.channel != null) {
@@ -48,6 +56,11 @@ public class AdminUserService {
         }
     }
 
+    /**
+     * Регистрация нового пользователя администратором.
+     * @param user - полная информация о пользователе
+     * @throws HttpStatusException CONFLICT (почта уже существует), NOT_FOUND (почта админа не найдена) UNAUTHORIZED (пароль админа не совпадает), FORBIDDEN (отказано в доступе)
+     */
     public void createUser(CreateUserDto user) throws HttpStatusException {
 
         CreateRequestAdmin req;
@@ -77,6 +90,8 @@ public class AdminUserService {
         } catch (StatusRuntimeException e) {
             Status status = e.getStatus();
             switch (status.getCode()) {
+                case NOT_FOUND:
+                    throw new HttpStatusException(HttpStatus.NOT_FOUND, e.getMessage());
                 case ALREADY_EXISTS:
                     throw new HttpStatusException(HttpStatus.CONFLICT, e.getMessage());
                 case UNAUTHENTICATED:
@@ -89,6 +104,15 @@ public class AdminUserService {
         } 
     }
 
+    /**
+     * Сортировка всех пользователей по ключу администратором.
+     * @param email
+     * @param key
+     * @param sortBy
+     * @param sortKey
+     * @return пустой список или список с полной информацией о найденных пользователях
+     * @throws HttpStatusException NOT_FOUND (почта админа не найдена), UNAUTHORIZED (пароль админа не совпадает), FORBIDDEN (отказано в доступе)
+     */
     public GetUserAdminDto sortUser(String email, String key, By sortBy, String sortKey) throws HttpStatusException {
 
         GetRequestAdmin req = GetRequestAdmin.newBuilder()
@@ -125,6 +149,14 @@ public class AdminUserService {
         return new GetUserAdminDto(result);
     }
 
+    /**
+     * Получение пользователя по его id администратором.
+     * @param id
+     * @param email
+     * @param key
+     * @return
+     * @throws HttpStatusException NOT_FOUND (почта админа не найдена), UNAUTHORIZED (пароль админа не совпадает), FORBIDDEN (отказано в доступе)
+     */
     public GetUserDto getUserById(int id, String email, String key) throws HttpStatusException {
 
         Email req = Email.newBuilder().setEmail(email).setPassword(key).setId(id).build();
@@ -149,6 +181,11 @@ public class AdminUserService {
         return parseToDto(res); 
     }
 
+    /**
+     * Обновление общей информации о пользователе администратором.
+     * @param user
+     * @throws HttpStatusException CONFLICT (почта уже существует), NOT_FOUND (почта админа/user не найден(-а)), UNAUTHORIZED (пароль админа не совпадает), FORBIDDEN (отказано в доступе)
+     */
     public void updateUser(UpdateUserDto user) throws HttpStatusException {
 
         UpdateRequestAdmin req;
@@ -194,6 +231,12 @@ public class AdminUserService {
         }
     }
 
+    /**
+     * Изменение роли пользователя или администратора или передача прав.
+     * @param id
+     * @param user
+     * @throws HttpStatusException BAD_REQUEST (администратор не может менять сам себя), NOT_FOUND (почта админа/user не найден(-а)) UNAUTHORIZED (пароль админа не совпадает), FORBIDDEN (отказано в доступе)
+     */
     public void updateRole(int id, UpdateRoleUserDto user) throws HttpStatusException {
 
         UpdateRoleRequestAdmin req = UpdateRoleRequestAdmin.newBuilder()
@@ -216,14 +259,19 @@ public class AdminUserService {
                     throw new HttpStatusException(HttpStatus.FORBIDDEN, e.getMessage());
                 case INVALID_ARGUMENT:
                     throw new HttpStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-                case ALREADY_EXISTS:
-                    throw new HttpStatusException(HttpStatus.CONFLICT, e.getMessage());
                 default:
                     throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
             }
         }
     }
 
+    /**
+     * Удаление пользователя администратором.
+     * @param id
+     * @param email
+     * @param key
+     * @throws HttpStatusException NOT_FOUND (почта админа/user не найден(-а)), UNAUTHORIZED (пароль админа не совпадает), FORBIDDEN (отказано в доступе)
+     */
     public void deleteUser(int id, String email, String key) throws HttpStatusException {
 
         DeleteRequestAdmin req = DeleteRequestAdmin.newBuilder()
