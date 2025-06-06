@@ -136,9 +136,12 @@ public class BookingService {
 
         for (int i = 0; i < times.size(); i++) {
             TimeBookingDto time = times.get(i);
-            boolean startIsBad = bookingStart.isAfter(time.getBookingStart()) || bookingStart.equals(time.getBookingStart());
-            boolean endIsBad = bookingEnd.isBefore(time.getBookingEnd()) || bookingEnd.equals(time.getBookingEnd());
-            if (startIsBad && endIsBad) {
+            boolean startIsBad = (bookingStart.isAfter(time.getBookingStart()) || bookingStart.equals(time.getBookingStart())) && (
+                    bookingStart.isBefore(time.getBookingEnd()) || bookingStart.equals(time.getBookingEnd()));
+            boolean endIsBad = (bookingEnd.isBefore(time.getBookingEnd()) || bookingEnd.equals(time.getBookingEnd())) && (
+                    bookingEnd.isAfter(time.getBookingStart()) || bookingEnd.equals(time.getBookingStart()));
+
+            if (startIsBad || endIsBad) {
                 throw new HttpStatusException(HttpStatus.BAD_REQUEST, String.format("Уже существует бронь с %s по %s", 
                     time.getBookingStart().format(timeFormatter), time.getBookingEnd().format(timeFormatter)));
             }
