@@ -11,12 +11,7 @@ import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import centraluniversity.app.booking.models.booking.Booking;
-import centraluniversity.app.booking.models.booking.BookingDto;
-import centraluniversity.app.booking.models.booking.CreateBookingDto;
-import centraluniversity.app.booking.models.booking.DateBookingDto;
-import centraluniversity.app.booking.models.booking.TimeBookingDto;
-import centraluniversity.app.booking.models.booking.UpdateBookingDto;
+import centraluniversity.app.booking.models.booking.*;
 import centraluniversity.app.booking.models.exception.HttpStatusException;
 import centraluniversity.app.booking.models.rooms.Room;
 import centraluniversity.app.booking.models.user.GetUserDto;
@@ -32,7 +27,6 @@ public class BookingService {
     private final RoomService roomService;
     private final BookingRepository bookingRepository;
     private final AdminUserService adminUserService;
-    private DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     /**
      * Проверка, либо что запрос отправлен администратором, либо что пользователь редактирует именно свою запись.
@@ -70,13 +64,12 @@ public class BookingService {
         return booking.get();
     }
 
-    // TODO: unit-test
     /**
      * Преобразование List < Booking > в List < BookingDto >.
      * @param bookings List < Booking >
      * @return List < BookingDto >
      */
-    private List<BookingDto> parseToBookingDtoList(List<Booking> bookings) {
+    public List<BookingDto> parseToBookingDtoList(List<Booking> bookings) {
         List<BookingDto> result = new ArrayList<>();
 
         for (int i = 0; i < bookings.size(); i++) {
@@ -95,7 +88,6 @@ public class BookingService {
         return result;
     }
 
-    // TODO: unit-test
     /**
      * Валидация даты и времени бронирования.
      * @param bookingDate
@@ -103,13 +95,13 @@ public class BookingService {
      * @param bookingEnd
      * @throws HttpStatusException BAD_REQUEST 
      */
-    private void validateDateTime(LocalDate bookingDate, LocalTime bookingStart, LocalTime bookingEnd) throws HttpStatusException {
+    public static void validateDateTime(LocalDate bookingDate, LocalTime bookingStart, LocalTime bookingEnd) throws HttpStatusException {
         if (bookingDate.isBefore(LocalDate.now(ZoneId.of("Europe/Moscow")))) {
             throw new HttpStatusException(HttpStatus.BAD_REQUEST, "Нельзя забронировать аудиторию ранее сегодняшнего дня");
         }
 
         if (bookingStart.isAfter(bookingEnd) || bookingStart.equals(bookingEnd)) {
-            throw new HttpStatusException(HttpStatus.BAD_REQUEST, "Время начала должна быть строго раньше времени окончания");
+            throw new HttpStatusException(HttpStatus.BAD_REQUEST, "Время начала должно быть строго раньше времени окончания");
         }
     }
     
@@ -139,7 +131,9 @@ public class BookingService {
      * @param bookingStart
      * @param bookingEnd
      */
-    private void validateTimesByOneDay(List<TimeBookingDto> times, LocalTime bookingStart, LocalTime bookingEnd) {
+    public static void validateTimesByOneDay(List<TimeBookingDto> times, LocalTime bookingStart, LocalTime bookingEnd) {
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+
         for (int i = 0; i < times.size(); i++) {
             TimeBookingDto time = times.get(i);
             boolean startIsBad = bookingStart.isAfter(time.getBookingStart()) || bookingStart.equals(time.getBookingStart());
@@ -158,6 +152,14 @@ public class BookingService {
      * @throws HttpStatusException BAD_REQUEST (время брони занято), NOT_FOUND (почта/ауд. не найдена), UNAUTHORIZED (пароль не совпадает), FORBIDDEN (доступ запрещен)
      */
     public void createBooking(CreateBookingDto booking, boolean isAdmin) throws HttpStatusException {
+
+        System.out.println(booking.getEmail());
+        System.out.println(booking.getPassword());
+        System.out.println(booking.getRoomId());
+        System.out.println(booking.getUserId());
+        System.out.println(booking.getBookingDate());
+        System.out.println(booking.getBookingEnd());
+        System.out.println(booking.getBookingStart());
         
         auth(booking.getUserId(), booking.getEmail(), booking.getPassword(), isAdmin);
         roomService.getRoomById(booking.getRoomId());
