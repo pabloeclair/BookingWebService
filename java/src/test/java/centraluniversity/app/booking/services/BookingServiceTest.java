@@ -34,7 +34,7 @@ public class BookingServiceTest {
     }
 
     @Test
-    public void testValidateDateTime_IllegalRequest_IllegalBookingDate() {
+    public void testValidateDateTime_IncorrectRequest_IllegalBookingDate() {
 
         // Array
         LocalDate bookingDate = LocalDate.parse("2023-04-04", dateFormatter);
@@ -50,7 +50,7 @@ public class BookingServiceTest {
     }
 
     @Test
-    public void testValidateDateTime_IllegalRequest_IllegalBookingStart() {
+    public void testValidateDateTime_IncorrectRequest_IllegalBookingStart() {
 
         // Array
         LocalDate bookingDate = LocalDate.parse("2044-04-04", dateFormatter);
@@ -66,7 +66,7 @@ public class BookingServiceTest {
     }
 
     @Test
-    public void testValidateDateTime_IllegalRequest_BookingTimesEquals() {
+    public void testValidateDateTime_IncorrectRequest_BookingTimesEquals() {
 
         // Array
         LocalDate bookingDate = LocalDate.parse("2044-04-04", dateFormatter);
@@ -116,6 +116,75 @@ public class BookingServiceTest {
         BookingService.validateTimesByOneDay(array, bookingStart, bookingEnd);
     }
 
+    @Test
+    public void testValidateTimesByOneDay_CorrectRequest_WithoutArray() {
+
+        // Array
+        List<TimeBookingDto> array = new ArrayList<>();
+        LocalTime bookingStart = LocalTime.of(16, 20);
+        LocalTime bookingEnd = LocalTime.of(18, 20);
+
+        // Action & Assert
+        BookingService.validateTimesByOneDay(array, bookingStart, bookingEnd);
+    }
+
+    @Test 
+    public void testValidateTimesByOneDay_IncorrectRequest_IllegalStartTime1() {
+
+        // Array
+        List<TimeBookingDto> array = generateSampleTimeBookings();
+        LocalTime bookingStart = LocalTime.of(11, 20);
+        LocalTime bookingEnd = LocalTime.of(13, 20);
+        String expectedError = "Уже существует бронь с 11:00:00 по 12:00:00";
+
+        // Action & Assert
+        HttpStatusException e = assertThrows(HttpStatusException.class, () -> BookingService.validateTimesByOneDay(array, bookingStart, bookingEnd));
+        assertEquals(HttpStatus.BAD_REQUEST, e.getStatus());
+        assertEquals(expectedError, e.getMessage());
+    }
+
+    @Test 
+    public void testValidateTimesByOneDay_IncorrectRequest_IllegalStartTime2() {
+
+        // Array
+        List<TimeBookingDto> array = generateSampleTimeBookings();
+        LocalTime bookingStart = LocalTime.of(12, 0);
+        LocalTime bookingEnd = LocalTime.of(13, 20);
+        String expectedError = "Уже существует бронь с 11:00:00 по 12:00:00";
+
+        // Action & Assert
+        HttpStatusException e = assertThrows(HttpStatusException.class, () -> BookingService.validateTimesByOneDay(array, bookingStart, bookingEnd));
+        assertEquals(HttpStatus.BAD_REQUEST, e.getStatus());
+        assertEquals(expectedError, e.getMessage());
+    }
     
-    
+    @Test 
+    public void testValidateTimesByOneDay_IncorrectRequest_IllegalEndTime1() {
+
+        // Array
+        List<TimeBookingDto> array = generateSampleTimeBookings();
+        LocalTime bookingStart = LocalTime.of(8, 20);
+        LocalTime bookingEnd = LocalTime.of(9, 40);
+        String expectedError = "Уже существует бронь с 09:30:00 по 10:30:00";
+
+        // Action & Assert
+        HttpStatusException e = assertThrows(HttpStatusException.class, () -> BookingService.validateTimesByOneDay(array, bookingStart, bookingEnd));
+        assertEquals(HttpStatus.BAD_REQUEST, e.getStatus());
+        assertEquals(expectedError, e.getMessage());
+    }
+
+    @Test 
+    public void testValidateTimesByOneDay_IncorrectRequest_IllegalEndTime2() {
+
+        // Array
+        List<TimeBookingDto> array = generateSampleTimeBookings();
+        LocalTime bookingStart = LocalTime.of(8, 20);
+        LocalTime bookingEnd = LocalTime.of(9, 30);
+        String expectedError = "Уже существует бронь с 09:30:00 по 10:30:00";
+
+        // Action & Assert
+        HttpStatusException e = assertThrows(HttpStatusException.class, () -> BookingService.validateTimesByOneDay(array, bookingStart, bookingEnd));
+        assertEquals(HttpStatus.BAD_REQUEST, e.getStatus());
+        assertEquals(expectedError, e.getMessage());
+    }
 }
