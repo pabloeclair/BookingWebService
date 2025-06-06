@@ -18,7 +18,6 @@ services:
     container_name: auth-service
     environment:
       - DSN=${DSN}
-      - SQL_TIMEOUT=${SQL_TIMEOUT}
     ports:
       - "7001:7001"
     depends_on:
@@ -31,7 +30,6 @@ services:
     container_name: admin-service
     environment:
       - DSN=${DSN}
-      - SQL_TIMEOUT=${SQL_TIMEOUT}
     ports:
       - "7002:7002"
     depends_on:
