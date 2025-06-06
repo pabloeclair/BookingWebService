@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -31,45 +30,26 @@ type User struct {
 	Role       string `db:"role"`
 }
 
-func getSqlTimeout() (time.Duration, error) {
-
-	var timeout time.Duration
-	if os.Getenv("SQL_TIMEOUT") == "" {
-		timeout = time.Second * 7
-	} else {
-		t, err := strconv.Atoi(os.Getenv("SQL_TIMEOUT"))
-		if err != nil {
-			return 0, errors.New("invalid environment variable: SQL_TIMEOUT must be int")
-		}
-		timeout = time.Second * time.Duration(t)
-	}
-	return timeout, nil
-}
-
-func connectToDb() (context.Context, func(), *sqlx.DB, error) {
+func connectToDb() (*sqlx.DB, error) {
 
 	db, err := sqlx.Connect("pgx", os.Getenv("DSN"))
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("creating user: connection to db: %w", err)
+		return nil, fmt.Errorf("creating user: connection to db: %w", err)
 	}
 
-	timeout, err := getSqlTimeout()
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("creating user: %w", err)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	return ctx, cancel, db, nil
+	return db, nil
 }
 
 func CreateTable() error {
 
-	ctx, cancel, db, err := connectToDb()
+	db, err := connectToDb()
 	if err != nil {
 		return err
 	}
-	defer cancel()
 	defer db.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*7)
+	defer cancel()
 
 	query := `CREATE TABLE IF NOT EXISTS users (
 		id SERIAL PRIMARY KEY,
@@ -89,14 +69,17 @@ func CreateTable() error {
 	return nil
 }
 
+// удаление таблицы для интеграционных тестов
 func DeleteTable() error {
 
-	ctx, cancel, db, err := connectToDb()
+	db, err := connectToDb()
 	if err != nil {
 		return err
 	}
-	defer cancel()
 	defer db.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*7)
+	defer cancel()
 
 	_, err = db.ExecContext(ctx, `DROP TABLE IF EXISTS users;`)
 	if err != nil {
@@ -105,21 +88,19 @@ func DeleteTable() error {
 	return nil
 }
 
-func CreateUser(user User) (uint32, error) {
+func CreateUser(ctx context.Context, user User) (uint32, error) {
 
-	if _, err := GetUserByEmail(user.Email); !errors.Is(err, ErrNotFound) {
+	if _, err := GetUserByEmail(ctx, user.Email); !errors.Is(err, ErrNotFound) {
 		if err != nil {
 			return 0, fmt.Errorf("creating user: ошибка проверки почты: %w", err)
 		}
 		return 0, fmt.Errorf("%w: пользователь с почтой %s уже существует", ErrBadRequest, user.Email)
 	}
 
-	ctx, cancel, db, err := connectToDb()
+	db, err := connectToDb()
 	if err != nil {
 		return 0, err
 	}
-	defer cancel()
-	defer db.Close()
 
 	var id uint32
 	if err = db.GetContext(ctx, &id, `SELECT id FROM users LIMIT 1`); err != nil {
@@ -148,15 +129,13 @@ func CreateUser(user User) (uint32, error) {
 	return idRes, nil
 }
 
-func GetUserByEmail(email string) (User, error) {
+func GetUserByEmail(ctx context.Context, email string) (User, error) {
 
 	var res User
-	ctx, cancel, db, err := connectToDb()
+	db, err := connectToDb()
 	if err != nil {
 		return res, err
 	}
-	defer cancel()
-	defer db.Close()
 
 	query := `SELECT * FROM users WHERE email = $1;`
 	if err := db.GetContext(ctx, &res, query, email); err != nil {
@@ -168,15 +147,13 @@ func GetUserByEmail(email string) (User, error) {
 	return res, nil
 }
 
-func GetUserById(id uint32) (User, error) {
+func GetUserById(ctx context.Context, id uint32) (User, error) {
 
 	var res User
-	ctx, cancel, db, err := connectToDb()
+	db, err := connectToDb()
 	if err != nil {
 		return res, err
 	}
-	defer cancel()
-	defer db.Close()
 
 	query := `SELECT * FROM users WHERE id = $1;`
 	if err := db.GetContext(ctx, &res, query, id); err != nil {
@@ -188,15 +165,13 @@ func GetUserById(id uint32) (User, error) {
 	return res, nil
 }
 
-func GetUserByKey(sortBy *pb.By, sortValue string) ([]User, error) {
+func GetUserByKey(ctx context.Context, sortBy *pb.By, sortValue string) ([]User, error) {
 
 	var res []User
-	ctx, cancel, db, err := connectToDb()
+	db, err := connectToDb()
 	if err != nil {
 		return res, err
 	}
-	defer cancel()
-	defer db.Close()
 
 	query := `SELECT * FROM users`
 	if sortBy != pb.By_NONE.Enum() {
@@ -212,25 +187,23 @@ func GetUserByKey(sortBy *pb.By, sortValue string) ([]User, error) {
 	return res, nil
 }
 
-func UpdateUser(user User) error {
+func UpdateUser(ctx context.Context, user User) error {
 
-	test, err := GetUserById(user.ID)
+	test, err := GetUserById(ctx, user.ID)
 	if err != nil {
 		return fmt.Errorf("updating user: %w", err)
 	}
-	if _, err := GetUserByEmail(user.Email); !errors.Is(err, sql.ErrNoRows) && test.Email != user.Email {
+	if _, err := GetUserByEmail(ctx, user.Email); !errors.Is(err, sql.ErrNoRows) && test.Email != user.Email {
 		if err == nil {
 			return fmt.Errorf("%w: пользователь с почтой %s уже существует", ErrBadRequest, user.Email)
 		}
 		return fmt.Errorf("updating user: %w", err)
 	}
 
-	ctx, cancel, db, err := connectToDb()
+	db, err := connectToDb()
 	if err != nil {
 		return err
 	}
-	defer cancel()
-	defer db.Close()
 
 	query := `UPDATE users 
 		SET email = :email, first_name = :first_name, second_name = :second_name, 
@@ -246,14 +219,12 @@ func UpdateUser(user User) error {
 	return nil
 }
 
-func UpdatePassword(id uint32, password string) error {
+func UpdatePassword(ctx context.Context, id uint32, password string) error {
 
-	ctx, cancel, db, err := connectToDb()
+	db, err := connectToDb()
 	if err != nil {
 		return fmt.Errorf("updating password: %w", err)
 	}
-	defer cancel()
-	defer db.Close()
 
 	query := `UPDATE users SET password = $1 WHERE id = $2`
 
@@ -267,14 +238,12 @@ func UpdatePassword(id uint32, password string) error {
 	return nil
 }
 
-func DeleteUser(id uint32) error {
+func DeleteUser(ctx context.Context, id uint32) error {
 
-	ctx, cancel, db, err := connectToDb()
+	db, err := connectToDb()
 	if err != nil {
 		return err
 	}
-	defer cancel()
-	defer db.Close()
 
 	if _, err := db.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

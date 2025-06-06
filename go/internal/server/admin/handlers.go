@@ -44,7 +44,7 @@ func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmi
 	// Показатель успеха — отсутствие ошибки.
 
 	s.mu.RLock()
-	_, err := utils.ComparePassword(req.AdminEmail, req.AdminPassword, true)
+	_, err := utils.ComparePassword(ctx, req.AdminEmail, req.AdminPassword, true)
 	s.mu.RUnlock()
 
 	if err != nil {
@@ -61,7 +61,7 @@ func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmi
 	}
 
 	s.mu.Lock()
-	_, err = db.CreateUser(user)
+	_, err = db.CreateUser(ctx, user)
 	s.mu.Unlock()
 
 	if err != nil {
@@ -85,14 +85,14 @@ func (s *AdminService) SortUser(ctx context.Context, req *pb.GetRequestAdmin) (*
 	// Показатель успеха — информация о всех найденных пользователях.
 
 	s.mu.RLock()
-	_, err := utils.ComparePassword(req.AdminEmail, req.AdminPassword, true)
+	_, err := utils.ComparePassword(ctx, req.AdminEmail, req.AdminPassword, true)
 	s.mu.RUnlock()
 	if err != nil {
 		return nil, err
 	}
 
 	s.mu.RLock()
-	res, err := db.GetUserByKey(&req.SortBy, req.SortKey)
+	res, err := db.GetUserByKey(ctx, &req.SortBy, req.SortKey)
 	s.mu.RUnlock()
 	if err != nil {
 		return nil, utils.CompareErrAndErrNotFound(err)
@@ -117,14 +117,14 @@ func (s *AdminService) GetUserById(ctx context.Context, req *pb.Email) (*pb.GetR
 	// Показатель успеха — информация о найденном пользователе.
 
 	s.mu.RLock()
-	_, err := utils.ComparePassword(req.Email, req.Password, true)
+	_, err := utils.ComparePassword(ctx, req.Email, req.Password, true)
 	s.mu.RUnlock()
 	if err != nil {
 		return nil, err
 	}
 
 	s.mu.RLock()
-	res, err := db.GetUserById(req.Id)
+	res, err := db.GetUserById(ctx, req.Id)
 	s.mu.RUnlock()
 	if err != nil {
 		return nil, utils.CompareErrAndErrNotFound(err)
@@ -150,7 +150,7 @@ func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmi
 	// Показатель успеха — отсутствие ошибки.
 
 	s.mu.RLock()
-	admin, err := utils.ComparePassword(req.AdminEmail, req.AdminPassword, true)
+	admin, err := utils.ComparePassword(ctx, req.AdminEmail, req.AdminPassword, true)
 	s.mu.RUnlock()
 	if err != nil {
 		return nil, err
@@ -173,7 +173,7 @@ func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmi
 	}
 
 	s.mu.Lock()
-	err = db.UpdateUser(user)
+	err = db.UpdateUser(ctx, user)
 	s.mu.Unlock()
 	if err != nil {
 		return nil, utils.CompareErrAndErrNotFound(err)
@@ -200,7 +200,7 @@ func (s *AdminService) UpdateRole(ctx context.Context, req *pb.UpdateRoleRequest
 	// Показатель успеха — отсутствие ошибки.
 
 	s.mu.RLock()
-	admin, err := utils.ComparePassword(req.AdminEmail, req.AdminPassword, true)
+	admin, err := utils.ComparePassword(ctx, req.AdminEmail, req.AdminPassword, true)
 	s.mu.RUnlock()
 	if err != nil {
 		return nil, err
@@ -211,7 +211,7 @@ func (s *AdminService) UpdateRole(ctx context.Context, req *pb.UpdateRoleRequest
 	}
 
 	s.mu.RLock()
-	user, err := db.GetUserById(req.Id)
+	user, err := db.GetUserById(ctx, req.Id)
 	s.mu.RUnlock()
 	if err != nil {
 		return nil, utils.CompareErrAndErrNotFound(err)
@@ -224,7 +224,7 @@ func (s *AdminService) UpdateRole(ctx context.Context, req *pb.UpdateRoleRequest
 	user.Role = req.NewRole.String()
 
 	s.mu.Lock()
-	err = db.UpdateUser(user)
+	err = db.UpdateUser(ctx, user)
 	s.mu.Unlock()
 	if err != nil {
 		if errors.Is(err, db.ErrBadRequest) {
@@ -237,7 +237,7 @@ func (s *AdminService) UpdateRole(ctx context.Context, req *pb.UpdateRoleRequest
 		admin.Role = pb.Role_ADMIN.String()
 
 		s.mu.Lock()
-		err = db.UpdateUser(admin)
+		err = db.UpdateUser(ctx, admin)
 		s.mu.Unlock()
 		if err != nil {
 			return nil, utils.CompareErrAndErrNotFound(err)
@@ -263,14 +263,14 @@ func (s *AdminService) DeleteUser(ctx context.Context, req *pb.DeleteRequestAdmi
 	// Показатель успеха — информация о всех найденных пользователях.
 
 	s.mu.RLock()
-	admin, err := utils.ComparePassword(req.AdminEmail, req.AdminPassword, true)
+	admin, err := utils.ComparePassword(ctx, req.AdminEmail, req.AdminPassword, true)
 	s.mu.RUnlock()
 	if err != nil {
 		return nil, err
 	}
 
 	s.mu.RLock()
-	user, err := db.GetUserById(req.Id)
+	user, err := db.GetUserById(ctx, req.Id)
 	s.mu.RUnlock()
 	if err != nil {
 		return nil, utils.CompareErrAndErrNotFound(err)
@@ -285,7 +285,7 @@ func (s *AdminService) DeleteUser(ctx context.Context, req *pb.DeleteRequestAdmi
 	}
 
 	s.mu.Lock()
-	err = db.DeleteUser(req.Id)
+	err = db.DeleteUser(ctx, req.Id)
 	s.mu.Unlock()
 	if err != nil {
 		return nil, utils.CompareErrAndErrNotFound(err)

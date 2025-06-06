@@ -52,7 +52,7 @@ func (s *AuthServer) SignupUser(ctx context.Context, req *pb.SignupRequest) (*pb
 	}
 
 	s.mu.Lock()
-	id, err := db.CreateUser(user)
+	id, err := db.CreateUser(ctx, user)
 	s.mu.Unlock()
 	if err != nil {
 		if errors.Is(err, db.ErrBadRequest) {
@@ -73,7 +73,7 @@ func (s *AuthServer) LoginUser(ctx context.Context, req *pb.Email) (*pb.GetRespo
 	// Показатель успеха — информация о пользователе.
 
 	s.mu.RLock()
-	res, err := utils.ComparePassword(req.Email, req.Password, false)
+	res, err := utils.ComparePassword(ctx, req.Email, req.Password, false)
 	s.mu.RUnlock()
 	if err != nil {
 		return nil, err
@@ -92,7 +92,7 @@ func (s *AuthServer) UpdateUser(ctx context.Context, req *pb.UpdateRequest) (*pb
 	// Показатель успеха — отсутствие ошибки.
 
 	s.mu.RLock()
-	_, err := utils.ComparePassword(req.Email, req.Password, false)
+	_, err := utils.ComparePassword(ctx, req.Email, req.Password, false)
 	s.mu.RUnlock()
 	if err != nil {
 		return nil, err
@@ -107,7 +107,7 @@ func (s *AuthServer) UpdateUser(ctx context.Context, req *pb.UpdateRequest) (*pb
 	}
 
 	s.mu.Lock()
-	err = db.UpdateUser(user)
+	err = db.UpdateUser(ctx, user)
 	s.mu.Unlock()
 	if err != nil {
 		if errors.Is(err, db.ErrBadRequest) {
@@ -128,14 +128,14 @@ func (s *AuthServer) UpdatePassword(ctx context.Context, req *pb.UpdatePasswordR
 	// Показатель успеха — отсутствие ошибки.
 
 	s.mu.RLock()
-	_, err := utils.ComparePassword(req.Email, req.OldPassword, false)
+	_, err := utils.ComparePassword(ctx, req.Email, req.OldPassword, false)
 	s.mu.RUnlock()
 	if err != nil {
 		return nil, err
 	}
 
 	s.mu.Lock()
-	err = db.UpdatePassword(req.Id, req.NewPassword)
+	err = db.UpdatePassword(ctx, req.Id, req.NewPassword)
 	s.mu.Unlock()
 
 	if err != nil {
@@ -153,7 +153,7 @@ func (s *AuthServer) DeleteUser(ctx context.Context, req *pb.Email) (*pb.Empty, 
 	// Показатель успеха — отсутствие ошибки.
 
 	s.mu.RLock()
-	_, err := utils.ComparePassword(req.Email, req.Password, false)
+	_, err := utils.ComparePassword(ctx, req.Email, req.Password, false)
 	s.mu.RUnlock()
 
 	if err != nil {
@@ -161,7 +161,7 @@ func (s *AuthServer) DeleteUser(ctx context.Context, req *pb.Email) (*pb.Empty, 
 	}
 
 	s.mu.Lock()
-	err = db.DeleteUser(req.Id)
+	err = db.DeleteUser(ctx, req.Id)
 	s.mu.Unlock()
 	if err != nil {
 		return nil, utils.CompareErrAndErrNotFound(err)

@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"crypto/hmac"
 	"cu_coworking_book/go/internal/db"
 	"cu_coworking_book/go/internal/pb"
@@ -24,8 +25,8 @@ func CompareErrAndErrNotFound(err error) error {
 
 // Сверяет пароль указанного пользователя, а также проверяет роль при выполнении
 // команд администратора.
-func ComparePassword(email string, password string, admin bool) (db.User, error) {
-	user, err := db.GetUserByEmail(email)
+func ComparePassword(ctx context.Context, email string, password string, admin bool) (db.User, error) {
+	user, err := db.GetUserByEmail(ctx, email)
 
 	if err != nil {
 		return user, CompareErrAndErrNotFound(err)
