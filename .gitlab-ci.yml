@@ -8,7 +8,7 @@ variables:
 
 generate-protobuf:
   stage: generate
-  image: znly/protoc:latest   
+  image: namely/protoc-all:latest   
   tags:
     - students-buildkit-medium
   script:
