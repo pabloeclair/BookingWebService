@@ -21,7 +21,7 @@ go-build:
   tags:
     - students-buildkit-medium
   dependencies:
-    - generate_protobuf 
+    - generate-protobuf 
   script:
     - git fetch origin $BRANCH
     - git checkout $BRANCH
