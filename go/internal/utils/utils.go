@@ -56,14 +56,13 @@ func ComparePassword(ctx context.Context, email string, password string, admin b
 func ParseToResult(res db.User) *pb.GetResponse {
 
 	c := cases.Title(language.Russian)
-	patronymic := c.String(res.Patronymic)
 
 	return &pb.GetResponse{
 		Id:         res.ID,
 		Email:      res.Email,
 		FirstName:  c.String(res.FirstName),
 		SecondName: c.String(res.SecondName),
-		Patronymic: &patronymic,
+		Patronymic: c.String(res.Patronymic),
 		Password:   res.Password,
 		Role:       pb.Role(pb.Role_value[res.Role]),
 	}

@@ -43,7 +43,7 @@ message GetResponse {
     string email = 2;
     string first_name = 3;
     string second_name = 4;
-    optional string patronymic = 5;
+    string patronymic = 5;
     Role role = 6;
     string password = 7;
 }
@@ -52,7 +52,7 @@ message SignupRequest {
     string email = 1;
     string first_name = 2;
     string second_name = 3;
-    optional string patronymic = 4;
+    string patronymic = 4;
     string password = 5;
 }
 
@@ -60,7 +60,7 @@ message UpdateRequest {
     string email = 1;
     string first_name = 2;
     string second_name = 3;
-    optional string patronymic = 4;
+    string patronymic = 4;
     string password = 5;
     uint32 id = 6;
 }
@@ -85,7 +85,7 @@ message CreateRequestAdmin {
     string email = 1;
     string first_name = 2;
     string second_name = 3;
-    optional string patronymic = 4;
+    string patronymic = 4;
     string password = 5;
     string admin_email = 6;
     string admin_password = 7;
@@ -106,7 +106,7 @@ message UpdateRequestAdmin {
     string email = 1;
     string first_name = 2;
     string second_name = 3;
-    optional string patronymic = 4;
+    string patronymic = 4;
     string password = 5;
     string admin_email = 6;
     string admin_password = 7;

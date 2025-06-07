@@ -55,7 +55,7 @@ func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmi
 		Email:      req.Email,
 		FirstName:  req.FirstName,
 		SecondName: req.SecondName,
-		Patronymic: *req.Patronymic,
+		Patronymic: req.Patronymic,
 		Password:   req.Password,
 		Role:       pb.Role_USER.String(),
 	}
@@ -169,7 +169,7 @@ func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmi
 		Email:      req.Email,
 		FirstName:  strings.ToLower(req.FirstName),
 		SecondName: strings.ToLower(req.SecondName),
-		Patronymic: strings.ToLower(*req.Patronymic),
+		Patronymic: strings.ToLower(req.Patronymic),
 	}
 
 	s.mu.Lock()
