@@ -38,4 +38,14 @@ java-build:
   script:
     - gradle -p ./java build
 
+java-unit-tests:
+  stage: test
+  image: gradle:8.14.0-jdk17
+  tags:
+    - students-buildkit-medium 
+  dependencies:
+    - java-build
+  script:
+    - gradle -p ./java test
+
 
