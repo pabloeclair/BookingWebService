@@ -7,8 +7,10 @@ variables:
   GOCACHE: $CI_PROJECT_DIR/go/cache
 
 generate-protobuf:
-  image: znly/protoc:latest   
   stage: generate
+  image: znly/protoc:latest   
+  tags:
+    - students-buildkit-medium
   script:
     - go generate ./...   
   artifacts:
