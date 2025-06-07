@@ -6,18 +6,13 @@ stages:
 variables:
   GOCACHE: $CI_PROJECT_DIR/go/cache
 
-go-generate:
+generate-protobuf:
   stage: generate
   image: znly/protoc:latest   
   tags:
     - students-buildkit-medium
   script:
-    - git fetch origin $BRANCH
-    - git checkout $BRANCH
-    - go mod download
-    - go mod tidy
-    - mkdir -p $GOCACHE
-    - go generate ./...   
+    - protoc --go_out=./go/ --go-grpc_out=./go/ -I ./api auth.proto 
   artifacts:
     paths:
       - go/internal/pb/
@@ -28,7 +23,12 @@ go-build:
   tags:
     - students-buildkit-medium
   dependencies:
-    - go-generate
+    - generate-protobuf 
   script:
+    - git fetch origin $BRANCH
+    - git checkout $BRANCH
+    - go mod download
+    - go mod tidy
+    - mkdir -p $GOCACHE
     - go build -o auth ./go/cmd/auth
 
