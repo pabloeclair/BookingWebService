@@ -40,12 +40,19 @@ dependencies {
 
 	compileOnly("org.projectlombok:lombok")
 	annotationProcessor("org.projectlombok:lombok")
+	testCompileOnly("org.projectlombok:lombok")
+	testAnnotationProcessor("org.projectlombok:lombok")
 	
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+	testImplementation(platform("org.junit:junit-bom:5.10.0"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
 protobuf {
+	protoc {
+        artifact = "com.google.protobuf:protoc:3.21.12"  
+    }
     plugins {
         create("grpc") {
             artifact = "io.grpc:protoc-gen-grpc-java:1.51.0"
