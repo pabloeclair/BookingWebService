@@ -30,3 +30,12 @@ go-build:
     - mkdir -p $GOCACHE
     - go build -o auth ./go/cmd/server
 
+java-build:
+  stage: build
+  image: gradle:8.14.0-jdk17
+  tags:
+    - students-buildkit-medium
+  script:
+    - gradle -p ./java build
+
+
