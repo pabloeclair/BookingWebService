@@ -27,13 +27,12 @@ public class AdminUserService {
         this.bookingRepository = bookingRepository;
     }
 
-    // TODO: unit-test
     /**
-     * Преобразовывается protocol buffers GetResponse в GetUserDto.
+     * Преобразование protocol buffers GetResponse в GetUserDto.
      * @param user - GetResponse
      * @return user - GetUserDto
      */
-    private GetUserDto parseToDto(GetResponse user) {
+    public static GetUserDto parseToDto(GetResponse user) {
         return new GetUserDto(
             user.getId(),
             user.getEmail(),
