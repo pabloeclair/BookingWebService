@@ -16,5 +16,8 @@ public class ErrorDto {
 
     @JsonProperty("error_message")
     private String errorMessage;
+
+    @JsonProperty("error_type")
+    private String errorType;
 }
 
