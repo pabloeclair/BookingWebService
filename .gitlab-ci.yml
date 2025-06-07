@@ -1,15 +1,27 @@
 stages:
+  - generate
   - build
   - test
 
 variables:
   GOCACHE: $CI_PROJECT_DIR/go/cache
 
+generate-protobuf:
+  image: znly/protoc:latest   
+  stage: generate
+  script:
+    - go generate ./...   
+  artifacts:
+    paths:
+      - go/internal/pb/
+
 go-build:
   stage: build
   image: golang:1.23.9
   tags:
     - students-buildkit-medium
+  dependencies:
+    - generate_protobuf 
   script:
     - git fetch origin $BRANCH
     - git checkout $BRANCH
