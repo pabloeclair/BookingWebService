@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -42,12 +43,17 @@ func (s *AuthServer) SignupUser(ctx context.Context, req *pb.SignupRequest) (*pb
 	// При любых других ошибках – Internal.
 	// Показатель успеха — id пользователя.
 
+	hashPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), 12)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	user := db.User{
 		Email:      req.Email,
 		FirstName:  strings.ToLower(req.FirstName),
 		SecondName: strings.ToLower(req.SecondName),
 		Patronymic: strings.ToLower(req.GetPatronymic()),
-		Password:   req.Password,
+		Password:   string(hashPassword),
 		Role:       pb.Role_USER.String(),
 	}
 
@@ -134,8 +140,13 @@ func (s *AuthServer) UpdatePassword(ctx context.Context, req *pb.UpdatePasswordR
 		return nil, err
 	}
 
+	hashPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), 12)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	s.mu.Lock()
-	err = db.UpdatePassword(ctx, req.Id, req.NewPassword)
+	err = db.UpdatePassword(ctx, req.Id, string(hashPassword))
 	s.mu.Unlock()
 
 	if err != nil {

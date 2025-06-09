@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -46,9 +47,13 @@ func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmi
 	s.mu.RLock()
 	_, err := utils.ComparePassword(ctx, req.AdminEmail, req.AdminPassword, true)
 	s.mu.RUnlock()
-
 	if err != nil {
 		return nil, err
+	}
+
+	hashPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), 12)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	user := db.User{
@@ -56,7 +61,7 @@ func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmi
 		FirstName:  req.FirstName,
 		SecondName: req.SecondName,
 		Patronymic: req.Patronymic,
-		Password:   req.Password,
+		Password:   string(hashPassword),
 		Role:       pb.Role_USER.String(),
 	}
 
