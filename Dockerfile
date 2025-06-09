@@ -15,12 +15,12 @@ RUN go generate ./...
 
 RUN go build -o grpc_server ./go/cmd/server
 
-FROM alpine:latest AS auth
+FROM debian:bookworm-slim AS auth
 WORKDIR /app 
 COPY --from=go_build /app/grpc_server .
 CMD ["./grpc_server", "0.0.0.0:7001", "auth"]
 
-FROM alpine:latest AS admin
+FROM debian:bookworm-slim AS admin
 WORKDIR /app 
 COPY --from=go_build /app/grpc_server .
 CMD ["./grpc_server", "0.0.0.0:7002", "admin"]
