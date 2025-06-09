@@ -13,17 +13,17 @@ COPY /go/ /app/go/
 COPY /api/ /app/api/
 RUN go generate ./... 
 
-RUN go build -o auth_server ./go/cmd/server
+RUN go build -o grpc_server ./go/cmd/server
 
 FROM alpine:latest AS auth
 WORKDIR /app 
-COPY --from=go_build /app/auth_server .
-CMD ["./admin_server", "0.0.0.0:7001", "auth"]
+COPY --from=go_build /app/grpc_server .
+CMD ["./grpc_server", "0.0.0.0:7001", "auth"]
 
 FROM alpine:latest AS admin
 WORKDIR /app 
-COPY --from=go_build /app/auth_server .
-CMD ["./admin_server", "0.0.0.0:7002", "admin"]
+COPY --from=go_build /app/grpc_server .
+CMD ["./grpc_server", "0.0.0.0:7002", "admin"]
 
 FROM gradle:8.14.0-jdk17 AS web_build
 WORKDIR /app
@@ -35,7 +35,7 @@ COPY /api/ /app/src/main/proto
 
 RUN gradle build --no-daemon
 
-FROM eclipse-temurin:17-jre-alpine AS web
+FROM openjdk:17-jdk-alpine AS web
 WORKDIR /app
 
 COPY --from=web_build /app/build/libs/*.jar app.jar
