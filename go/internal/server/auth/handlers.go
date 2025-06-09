@@ -8,7 +8,6 @@ import (
 	"errors"
 	"log"
 	"strings"
-	"sync"
 
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
@@ -18,7 +17,6 @@ import (
 
 type AuthServer struct {
 	pb.UnimplementedAuthenticationServer
-	mu sync.RWMutex
 }
 
 // Записывает логи применения всех хэндлеров. Если какой-то из хэндлеров запустился неудачно, то сообщает о типе и сообщении ошибки.
@@ -57,9 +55,7 @@ func (s *AuthServer) SignupUser(ctx context.Context, req *pb.SignupRequest) (*pb
 		Role:       pb.Role_USER.String(),
 	}
 
-	s.mu.Lock()
 	id, err := db.CreateUser(ctx, user)
-	s.mu.Unlock()
 	if err != nil {
 		if errors.Is(err, db.ErrBadRequest) {
 			return nil, status.Error(codes.AlreadyExists, err.Error())
@@ -78,9 +74,7 @@ func (s *AuthServer) LoginUser(ctx context.Context, req *pb.Email) (*pb.GetRespo
 	// При любых других ошибках – Internal.
 	// Показатель успеха — информация о пользователе.
 
-	s.mu.RLock()
 	res, err := utils.ComparePassword(ctx, req.Email, req.Password, false)
-	s.mu.RUnlock()
 	if err != nil {
 		return nil, err
 	}
@@ -97,9 +91,7 @@ func (s *AuthServer) UpdateUser(ctx context.Context, req *pb.UpdateRequest) (*pb
 	// При любых других ошибках – Internal.
 	// Показатель успеха — отсутствие ошибки.
 
-	s.mu.RLock()
 	_, err := utils.ComparePassword(ctx, req.Email, req.Password, false)
-	s.mu.RUnlock()
 	if err != nil {
 		return nil, err
 	}
@@ -112,10 +104,7 @@ func (s *AuthServer) UpdateUser(ctx context.Context, req *pb.UpdateRequest) (*pb
 		Patronymic: strings.ToLower(req.GetPatronymic()),
 	}
 
-	s.mu.Lock()
-	err = db.UpdateUser(ctx, user)
-	s.mu.Unlock()
-	if err != nil {
+	if err := db.UpdateUser(ctx, user); err != nil {
 		if errors.Is(err, db.ErrBadRequest) {
 			return nil, status.Error(codes.AlreadyExists, err.Error())
 		}
@@ -133,10 +122,7 @@ func (s *AuthServer) UpdatePassword(ctx context.Context, req *pb.UpdatePasswordR
 	// При любых других ошибках – Internal.
 	// Показатель успеха — отсутствие ошибки.
 
-	s.mu.RLock()
-	_, err := utils.ComparePassword(ctx, req.Email, req.OldPassword, false)
-	s.mu.RUnlock()
-	if err != nil {
+	if _, err := utils.ComparePassword(ctx, req.Email, req.OldPassword, false); err != nil {
 		return nil, err
 	}
 
@@ -145,11 +131,7 @@ func (s *AuthServer) UpdatePassword(ctx context.Context, req *pb.UpdatePasswordR
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	s.mu.Lock()
-	err = db.UpdatePassword(ctx, req.Id, string(hashPassword))
-	s.mu.Unlock()
-
-	if err != nil {
+	if err = db.UpdatePassword(ctx, req.Id, string(hashPassword)); err != nil {
 		return nil, utils.CompareErrAndErrNotFound(err)
 	}
 	return nil, nil
@@ -163,18 +145,11 @@ func (s *AuthServer) DeleteUser(ctx context.Context, req *pb.Email) (*pb.Empty, 
 	// При любых других ошибках – Internal.
 	// Показатель успеха — отсутствие ошибки.
 
-	s.mu.RLock()
-	_, err := utils.ComparePassword(ctx, req.Email, req.Password, false)
-	s.mu.RUnlock()
-
-	if err != nil {
+	if _, err := utils.ComparePassword(ctx, req.Email, req.Password, false); err != nil {
 		return nil, err
 	}
 
-	s.mu.Lock()
-	err = db.DeleteUser(ctx, req.Id)
-	s.mu.Unlock()
-	if err != nil {
+	if err := db.DeleteUser(ctx, req.Id); err != nil {
 		return nil, utils.CompareErrAndErrNotFound(err)
 	}
 	return nil, nil

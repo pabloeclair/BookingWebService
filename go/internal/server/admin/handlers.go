@@ -8,7 +8,6 @@ import (
 	"errors"
 	"log"
 	"strings"
-	"sync"
 
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
@@ -18,7 +17,6 @@ import (
 
 type AdminService struct {
 	pb.UnimplementedAdminServiceServer
-	mu sync.RWMutex
 }
 
 // Записывает логи применения всех хэндлеров. Если какой-то из хэндлеров запустился неудачно, то сообщает о типе и сообщении ошибки.
@@ -44,10 +42,7 @@ func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmi
 	// При любых других ошибках – Internal.
 	// Показатель успеха — отсутствие ошибки.
 
-	s.mu.RLock()
-	_, err := utils.ComparePassword(ctx, req.AdminEmail, req.AdminPassword, true)
-	s.mu.RUnlock()
-	if err != nil {
+	if _, err := utils.ComparePassword(ctx, req.AdminEmail, req.AdminPassword, true); err != nil {
 		return nil, err
 	}
 
@@ -65,11 +60,7 @@ func (s *AdminService) CreateUser(ctx context.Context, req *pb.CreateRequestAdmi
 		Role:       pb.Role_USER.String(),
 	}
 
-	s.mu.Lock()
-	_, err = db.CreateUser(ctx, user)
-	s.mu.Unlock()
-
-	if err != nil {
+	if _, err = db.CreateUser(ctx, user); err != nil {
 		if errors.Is(err, db.ErrBadRequest) {
 			return nil, status.Error(codes.AlreadyExists, err.Error())
 		}
@@ -89,16 +80,11 @@ func (s *AdminService) SortUser(ctx context.Context, req *pb.GetRequestAdmin) (*
 	// При любых других ошибках – Internal.
 	// Показатель успеха — информация о всех найденных пользователях.
 
-	s.mu.RLock()
-	_, err := utils.ComparePassword(ctx, req.AdminEmail, req.AdminPassword, true)
-	s.mu.RUnlock()
-	if err != nil {
+	if _, err := utils.ComparePassword(ctx, req.AdminEmail, req.AdminPassword, true); err != nil {
 		return nil, err
 	}
 
-	s.mu.RLock()
 	res, err := db.GetUserByKey(ctx, &req.SortBy, req.SortKey)
-	s.mu.RUnlock()
 	if err != nil {
 		return nil, utils.CompareErrAndErrNotFound(err)
 	}
@@ -121,16 +107,12 @@ func (s *AdminService) GetUserById(ctx context.Context, req *pb.Email) (*pb.GetR
 	// При любых других ошибках – Internal.
 	// Показатель успеха — информация о найденном пользователе.
 
-	s.mu.RLock()
-	_, err := utils.ComparePassword(ctx, req.Email, req.Password, true)
-	s.mu.RUnlock()
-	if err != nil {
+	if _, err := utils.ComparePassword(ctx, req.Email, req.Password, true); err != nil {
 		return nil, err
 	}
 
-	s.mu.RLock()
 	res, err := db.GetUserById(ctx, req.Id)
-	s.mu.RUnlock()
+
 	if err != nil {
 		return nil, utils.CompareErrAndErrNotFound(err)
 	}
@@ -154,9 +136,7 @@ func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmi
 	// При любых других ошибках – Internal.
 	// Показатель успеха — отсутствие ошибки.
 
-	s.mu.RLock()
 	admin, err := utils.ComparePassword(ctx, req.AdminEmail, req.AdminPassword, true)
-	s.mu.RUnlock()
 	if err != nil {
 		return nil, err
 	}
@@ -177,10 +157,7 @@ func (s *AdminService) UpdateUser(ctx context.Context, req *pb.UpdateRequestAdmi
 		Patronymic: strings.ToLower(req.Patronymic),
 	}
 
-	s.mu.Lock()
-	err = db.UpdateUser(ctx, user)
-	s.mu.Unlock()
-	if err != nil {
+	if err = db.UpdateUser(ctx, user); err != nil {
 		return nil, utils.CompareErrAndErrNotFound(err)
 	}
 
@@ -204,9 +181,7 @@ func (s *AdminService) UpdateRole(ctx context.Context, req *pb.UpdateRoleRequest
 	// При любых других ошибках – Internal.
 	// Показатель успеха — отсутствие ошибки.
 
-	s.mu.RLock()
 	admin, err := utils.ComparePassword(ctx, req.AdminEmail, req.AdminPassword, true)
-	s.mu.RUnlock()
 	if err != nil {
 		return nil, err
 	}
@@ -215,9 +190,7 @@ func (s *AdminService) UpdateRole(ctx context.Context, req *pb.UpdateRoleRequest
 		return nil, status.Error(codes.PermissionDenied, "администратор не может изменять роль пользователей")
 	}
 
-	s.mu.RLock()
 	user, err := db.GetUserById(ctx, req.Id)
-	s.mu.RUnlock()
 	if err != nil {
 		return nil, utils.CompareErrAndErrNotFound(err)
 	}
@@ -228,10 +201,7 @@ func (s *AdminService) UpdateRole(ctx context.Context, req *pb.UpdateRoleRequest
 
 	user.Role = req.NewRole.String()
 
-	s.mu.Lock()
-	err = db.UpdateUser(ctx, user)
-	s.mu.Unlock()
-	if err != nil {
+	if err = db.UpdateUser(ctx, user); err != nil {
 		if errors.Is(err, db.ErrBadRequest) {
 			return nil, status.Error(codes.AlreadyExists, err.Error())
 		}
@@ -241,10 +211,7 @@ func (s *AdminService) UpdateRole(ctx context.Context, req *pb.UpdateRoleRequest
 	if req.NewRole == pb.Role_MAIN_ADMIN {
 		admin.Role = pb.Role_ADMIN.String()
 
-		s.mu.Lock()
-		err = db.UpdateUser(ctx, admin)
-		s.mu.Unlock()
-		if err != nil {
+		if err = db.UpdateUser(ctx, admin); err != nil {
 			return nil, utils.CompareErrAndErrNotFound(err)
 		}
 	}
@@ -267,16 +234,12 @@ func (s *AdminService) DeleteUser(ctx context.Context, req *pb.DeleteRequestAdmi
 	// При любых других ошибках – Internal.
 	// Показатель успеха — информация о всех найденных пользователях.
 
-	s.mu.RLock()
 	admin, err := utils.ComparePassword(ctx, req.AdminEmail, req.AdminPassword, true)
-	s.mu.RUnlock()
 	if err != nil {
 		return nil, err
 	}
 
-	s.mu.RLock()
 	user, err := db.GetUserById(ctx, req.Id)
-	s.mu.RUnlock()
 	if err != nil {
 		return nil, utils.CompareErrAndErrNotFound(err)
 	}
@@ -289,10 +252,7 @@ func (s *AdminService) DeleteUser(ctx context.Context, req *pb.DeleteRequestAdmi
 		return nil, status.Error(codes.PermissionDenied, "администратор может удалять только обычных пользователей")
 	}
 
-	s.mu.Lock()
-	err = db.DeleteUser(ctx, req.Id)
-	s.mu.Unlock()
-	if err != nil {
+	if err = db.DeleteUser(ctx, req.Id); err != nil {
 		return nil, utils.CompareErrAndErrNotFound(err)
 	}
 	return nil, nil
