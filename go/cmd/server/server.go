@@ -3,72 +3,75 @@ package main
 import (
 	"context"
 	"cu_coworking_book/go/internal/db"
-	"cu_coworking_book/go/internal/pb"
-	"cu_coworking_book/go/internal/server/admin"
-	"cu_coworking_book/go/internal/server/auth"
+	"cu_coworking_book/go/internal/server/handlers"
+	"cu_coworking_book/go/internal/server/models"
 	"errors"
-	"fmt"
 	"log"
-	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"google.golang.org/grpc"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	if len(os.Args) != 3 {
-		fmt.Println("Error: необходимо ввести адрес сервера и его тип")
-		return
+
+	if len(os.Args) != 2 {
+		log.Fatal("ошибка запуска: необходимо ввести адрес запуска")
+	}
+	addrs := os.Args[1]
+
+	godotenv.Load()
+
+	secretKey := os.Getenv("JWT_SECRET_KEY")
+	if secretKey == "" {
+		log.Fatal("ошибка запуска: необходимо указать значение окружения JWT_SECRET_KEY для генерации JWT-токенов")
 	}
 
-	if os.Args[2] != "admin" && os.Args[2] != "auth" {
-		fmt.Println("Error: адрес может быть только двух типов - admin и auth")
-		return
-	}
-
-	address := os.Args[1]
-	type_ := os.Args[2]
+	durationUser := os.Getenv("JWT_USER_DURATION")
+	models.CheckJWTDuration(durationUser, false)
+	durationAdmin := os.Getenv("JWT_ADMIN_DURATION")
+	models.CheckJWTDuration(durationAdmin, true)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	lis, err := net.Listen("tcp", address)
-	if err != nil {
-		fmt.Println("Error: некорректный адрес сервера")
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v1/signup", handlers.SignupUser)
+	mux.HandleFunc("/api/v1/login", handlers.LoginUser)
+	mux.HandleFunc("/", handlers.NotFoundError)
+
+	s := http.Server{
+		Addr:    addrs,
+		Handler: handlers.LoggingMiddleware(mux),
+	}
+	hasError := false
+
+	go func() {
+		if err := s.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Printf("ошибка прослушивания: %s", err)
+			hasError = true
+		}
+	}()
+
+	<-time.After(time.Second * 1) // чтобы не выводил сообщение, если в начале прослушивания произойдет ошибка
+	if hasError {
 		return
 	}
 
-	var s *grpc.Server
-	if type_ == "auth" {
-		s = grpc.NewServer(grpc.UnaryInterceptor(auth.LogInterceptor))
-		pb.RegisterAuthenticationServer(s, &auth.AuthServer{})
-	} else {
-		s = grpc.NewServer(grpc.UnaryInterceptor(admin.LogInterceptor))
-		pb.RegisterAdminServiceServer(s, &admin.AdminService{})
+	if err := db.CreateTable(); err != nil {
+		log.Fatalf("ошибка подключения к бд: %s", err.Error())
 	}
-	log.Printf("GRPC %s сервер запущен по адресу %s", type_, lis.Addr().String())
 
-	go func() {
-		if err = s.Serve(lis); err != nil {
-			log.Fatalf("gRPC error: %v", err)
-		}
-	}()
-
-	go func() {
-		<-time.After(time.Second * 7)
-		if err := db.CreateTable(); err != nil {
-			if errors.Is(err, db.ErrConDB) {
-				log.Fatal(err)
-			} else {
-				log.Println(err)
-			}
-		}
-	}()
+	log.Println("сервер запущен")
 
 	<-ctx.Done()
-	s.GracefulStop()
-	log.Println("GRPC сервер закрыт")
+	log.Println("сервер закрывается...")
+	<-time.After(time.Second * 3)
+	if err := s.Shutdown(context.Background()); err != nil {
+		log.Printf("ошибка закрытия сервера: %s", err)
+	}
+	log.Println("сервер закрыт")
 }
