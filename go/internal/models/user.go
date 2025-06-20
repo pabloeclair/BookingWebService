@@ -3,14 +3,9 @@ package models
 import (
 	"context"
 	"cu_coworking_book/go/internal/db"
-	"cu_coworking_book/go/internal/utils"
 	"fmt"
-	"log"
-	"os"
 	"strings"
-	"time"
 
-	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -60,40 +55,6 @@ func (u *UserEmailPassword) ComparePassword(ctx context.Context) (*db.User, erro
 	return user, nil
 }
 
-func (u *UserEmailPassword) GenerateJWT(ctx context.Context) (string, error) {
-	res, err := u.ComparePassword(ctx)
-	if err != nil {
-		return "", nil
-	}
-
-	secretKey := []byte(os.Getenv("JWT_SECRET_KEY"))
-	if secretKey == nil {
-		log.Fatal("значение переменной JWT_SECRET_KEY обязана быть указанной")
-	}
-
-	durationStr := os.Getenv("JWT_USER_DURATION")
-	durationInt := utils.CheckJWTDuration(durationStr, false)
-
-	userClaim := UserClaim{
-		Id:         res.Id,
-		Email:      res.Email,
-		FirstName:  res.FirstName,
-		SecondName: res.SecondName,
-		Patronymic: res.Patronymic,
-		Role:       res.Role,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Minute * time.Duration(durationInt)).Unix(),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, userClaim)
-	tokenString, err := token.SignedString(secretKey)
-	if err != nil {
-		return "", fmt.Errorf("jwt error: %w", err)
-	}
-	return tokenString, nil
-}
-
 type UserSignupRequest struct {
 	Email      string `json:"email"`
 	FirstName  string `json:"first_name"`
@@ -138,7 +99,6 @@ type UserUpdateRequest struct {
 	FirstName  string `json:"first_name"`
 	SecondName string `json:"second_name"`
 	Patronymic string `json:"patronymic"`
-	Password   string `json:"password"`
 }
 
 func (u *UserUpdateRequest) Validation() error {
@@ -153,6 +113,17 @@ func (u *UserUpdateRequest) Validation() error {
 	}
 	if len(strings.Split(u.Patronymic, " ")) > 1 {
 		return fmt.Errorf("%w: поле отчества должно содержать лишь только само отчество", ErrBadBody)
+	}
+	return nil
+}
+
+type UserUpdatePassword struct {
+	NewPassword string `json:"new_password"`
+}
+
+func (u *UserUpdatePassword) Validation() error {
+	if u.NewPassword == "" {
+		return fmt.Errorf("%w: поле нового пароля обязательно", ErrBadBody)
 	}
 	return nil
 }
