@@ -45,7 +45,7 @@ func main() {
 
 	s := http.Server{
 		Addr:    addrs,
-		Handler: handlers.LoggingMiddleware(mux),
+		Handler: handlers.LoggingMiddleware(handlers.AuthMiddleware(mux)),
 	}
 	hasError := false
 

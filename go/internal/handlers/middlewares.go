@@ -2,9 +2,14 @@ package handlers
 
 import (
 	"cu_coworking_book/go/internal/models"
+	"errors"
 	"log"
 	"net/http"
+	"os"
+	"slices"
 	"strings"
+
+	"github.com/golang-jwt/jwt"
 )
 
 func LoggingMiddleware(handler http.Handler) http.Handler {
@@ -16,7 +21,6 @@ func LoggingMiddleware(handler http.Handler) http.Handler {
 	// случаях, Internal Server Error
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		if !strings.Contains(r.URL.Path, "login") {
 			w.Header().Set("Content-Type", "application/json")
 		}
@@ -38,5 +42,62 @@ func LoggingMiddleware(handler http.Handler) http.Handler {
 			lrw.StatusMessage = "Success"
 		}
 		log.Printf("%s %s: %d - %s", r.Method, r.URL.Path, lrw.StatusCode, lrw.StatusMessage)
+	})
+}
+
+func AuthMiddleware(handler http.Handler) http.Handler {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.Path, "/api/v1/user") {
+			handler.ServeHTTP(w, r)
+			return
+		}
+
+		tokenString := r.Header.Get("Authorization")
+		if tokenString == "" {
+			log.Printf("%s %s: %d - отсутствует JWT-токен", r.Method, r.URL.Path, http.StatusForbidden)
+			errDto := models.ExceptionDto{
+				StatusCode:   http.StatusForbidden,
+				ErrorMessage: "отсутствует JWT-токен",
+			}
+			errDto.WriteException(w)
+			return
+		}
+
+		token, err := jwt.ParseWithClaims(tokenString, &models.UserClaim{}, func(t *jwt.Token) (interface{}, error) {
+			secretKey := []byte(os.Getenv("JWT_SECRET_KEY"))
+			if secretKey == nil {
+				return nil, errors.New("отсутствует secret key")
+			}
+			return secretKey, nil
+		})
+
+		if err != nil {
+			log.Printf("%s %s: %d - %s", r.Method, r.URL.Path, http.StatusInternalServerError, err.Error())
+			errDto := models.ExceptionDto{
+				StatusCode:   http.StatusInternalServerError,
+				ErrorMessage: err.Error(),
+			}
+			errDto.WriteException(w)
+			return
+		}
+
+		claims := token.Claims.(*models.UserClaim)
+		roles := []string{
+			models.Role_USER.String(),
+			models.Role_ADMIN.String(),
+			models.Role_MAIN_ADMIN.String(),
+		}
+		if !slices.Contains(roles, claims.Role) {
+			log.Printf("%s %s: %d - отказано в доступе", r.Method, r.URL.Path, http.StatusForbidden)
+			errDto := models.ExceptionDto{
+				StatusCode:   http.StatusForbidden,
+				ErrorMessage: "отказано в доступе",
+			}
+			errDto.WriteException(w)
+			return
+		}
+
+		handler.ServeHTTP(w, r)
 	})
 }
