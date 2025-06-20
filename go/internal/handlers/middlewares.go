@@ -2,14 +2,10 @@ package handlers
 
 import (
 	"cu_coworking_book/go/internal/models"
-	"errors"
 	"log"
 	"net/http"
-	"os"
 	"slices"
 	"strings"
-
-	"github.com/golang-jwt/jwt"
 )
 
 func LoggingMiddleware(handler http.Handler) http.Handler {
@@ -21,9 +17,7 @@ func LoggingMiddleware(handler http.Handler) http.Handler {
 	// случаях, Internal Server Error
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.URL.Path, "login") {
-			w.Header().Set("Content-Type", "application/json")
-		}
+		w.Header().Set("Content-Type", "application/json")
 
 		// возвращение ошибки Bad Request
 		if r.Header.Get("Content-Type") == "" || r.Header.Get("Content-Type") != "application/json" {
@@ -38,10 +32,13 @@ func LoggingMiddleware(handler http.Handler) http.Handler {
 		// выполнение хэндлера и логирование
 		lrw := models.NewLoggingResponseWriter(w)
 		handler.ServeHTTP(lrw, r)
-		if lrw.StatusMessage == "" {
-			lrw.StatusMessage = "Success"
-		}
-		log.Printf("%s %s: %d - %s", r.Method, r.URL.Path, lrw.StatusCode, lrw.StatusMessage)
+		log.Printf(
+			"%s %s: %d - %s",
+			r.Method,
+			r.URL.Path,
+			lrw.StatusCode,
+			lrw.StatusMessage,
+		)
 	})
 }
 
@@ -57,32 +54,24 @@ func AuthMiddleware(handler http.Handler) http.Handler {
 		if tokenString == "" {
 			log.Printf("%s %s: %d - отсутствует JWT-токен", r.Method, r.URL.Path, http.StatusForbidden)
 			errDto := models.ExceptionDto{
-				StatusCode:   http.StatusForbidden,
+				StatusCode:   http.StatusUnauthorized,
 				ErrorMessage: "отсутствует JWT-токен",
 			}
 			errDto.WriteException(w)
 			return
 		}
 
-		token, err := jwt.ParseWithClaims(tokenString, &models.UserClaim{}, func(t *jwt.Token) (interface{}, error) {
-			secretKey := []byte(os.Getenv("JWT_SECRET_KEY"))
-			if secretKey == nil {
-				return nil, errors.New("отсутствует secret key")
-			}
-			return secretKey, nil
-		})
-
+		claims, err := models.ParseJWT(tokenString)
 		if err != nil {
 			log.Printf("%s %s: %d - %s", r.Method, r.URL.Path, http.StatusInternalServerError, err.Error())
 			errDto := models.ExceptionDto{
-				StatusCode:   http.StatusInternalServerError,
+				StatusCode:   http.StatusUnauthorized,
 				ErrorMessage: err.Error(),
 			}
 			errDto.WriteException(w)
 			return
 		}
 
-		claims := token.Claims.(*models.UserClaim)
 		roles := []string{
 			models.Role_USER.String(),
 			models.Role_ADMIN.String(),
