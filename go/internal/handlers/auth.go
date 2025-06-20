@@ -20,6 +20,15 @@ func SignupUser(w http.ResponseWriter, req *http.Request) {
 	// При любых других ошибках – Internal Server.
 	// Показатель успеха — статус Created и id пользователя.
 
+	if req.Method != http.MethodPost {
+		errDto := models.NewExceptionDto(
+			http.StatusMethodNotAllowed,
+			"допустимым методом является только POST",
+		)
+		errDto.WriteException(w)
+		return
+	}
+
 	ctx := req.Context()
 	var user models.UserSignupRequest
 
@@ -82,14 +91,23 @@ func SignupUser(w http.ResponseWriter, req *http.Request) {
 // Авторизация пользователя и генерация JWT-токена
 func LoginUser(w http.ResponseWriter, req *http.Request) {
 	// - Если пользователь с указанной почтой не найден, вернется ошибка NotFound.
-	// - Если пароль пользователя не совпал — Forbidden.
+	// - Если пароль пользователя не совпал — Unauthorized.
 
 	// При любых других ошибках – InternalServer или log.Fatal, если отсутствует JWT_SECRET_KEY
-	// или не указано число в JWT_USER_DURATION.
+	// или указано не число в JWT_USER_DURATION.
 	// Показатель успеха — статус Created и JWT-токен в заголовке Authorization.
 
+	if req.Method != http.MethodPost {
+		errDto := models.NewExceptionDto(
+			http.StatusMethodNotAllowed,
+			"допустимым методом является только POST",
+		)
+		errDto.WriteException(w)
+		return
+	}
+
 	ctx := req.Context()
-	var user models.UserLoginRequest
+	var user models.UserEmailPassword
 	if err := models.JsonToStruct(&user, req.Body); err != nil {
 		errDto := models.NewExceptionDto(
 			http.StatusBadRequest,
@@ -101,7 +119,7 @@ func LoginUser(w http.ResponseWriter, req *http.Request) {
 
 	if _, err := user.ComparePassword(ctx); err != nil {
 		errDto := models.NewExceptionDto(
-			http.StatusForbidden,
+			http.StatusUnauthorized,
 			fmt.Sprintf("%s: неверный пароль", models.ErrPermissionDenied.Error()),
 		)
 		errDto.WriteException(w)
@@ -118,13 +136,6 @@ func LoginUser(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	w.Header().Set("Authorization", token)
+	w.Header().Del("Content-Type")
 	w.WriteHeader(http.StatusCreated)
-}
-
-func NotFoundError(w http.ResponseWriter, req *http.Request) {
-	errDto := models.NewExceptionDto(
-		http.StatusNotFound,
-		"Адресный путь не найден",
-	)
-	errDto.WriteException(w)
 }
