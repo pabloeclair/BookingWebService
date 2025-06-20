@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"cu_coworking_book/go/internal/db"
-	"cu_coworking_book/go/internal/server/handlers"
-	"cu_coworking_book/go/internal/server/models"
+	"cu_coworking_book/go/internal/handlers"
+	"cu_coworking_book/go/internal/models"
 	"errors"
 	"log"
 	"net/http"
