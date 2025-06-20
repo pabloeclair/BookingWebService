@@ -15,19 +15,27 @@ import (
 )
 
 var (
-	ErrConDB      = errors.New("connection to the database failed")
-	ErrBadRequest = errors.New("409 error")
-	ErrNotFound   = errors.New("404 error")
+	ErrConDB    error = errors.New("ошибка подключения к базе данных")
+	ErrConflict error = errors.New("произошел конфликт данных")
+	ErrNotFound error = errors.New("по запросу ничего не было найдено")
 )
 
 type User struct {
-	ID         uint32 `db:"id"`
+	Id         uint32 `db:"id"`
 	Email      string `db:"email"`
 	FirstName  string `db:"first_name"`
 	SecondName string `db:"second_name"`
 	Patronymic string `db:"patronymic"`
 	Password   string `db:"password"`
 	Role       string `db:"role"`
+}
+
+func (u *User) finallyFieldsProcessing() {
+	u.FirstName = strings.ToTitle(string(u.FirstName[0])) + u.FirstName[1:]
+	u.SecondName = strings.ToTitle(string(u.SecondName[0])) + u.SecondName[1:]
+	if u.Patronymic != "" {
+		u.Patronymic = strings.ToTitle(string(u.Patronymic[0])) + u.Patronymic[1:]
+	}
 }
 
 func connectToDb() (*sqlx.DB, error) {
@@ -94,7 +102,7 @@ func CreateUser(ctx context.Context, user User) (uint32, error) {
 		if err != nil {
 			return 0, fmt.Errorf("creating user: ошибка проверки почты: %w", err)
 		}
-		return 0, fmt.Errorf("%w: пользователь с почтой %s уже существует", ErrBadRequest, user.Email)
+		return 0, fmt.Errorf("%w: пользователь с почтой %s уже существует", ErrConflict, user.Email)
 	}
 
 	db, err := connectToDb()
@@ -129,48 +137,52 @@ func CreateUser(ctx context.Context, user User) (uint32, error) {
 	return idRes, nil
 }
 
-func GetUserByEmail(ctx context.Context, email string) (User, error) {
-
+func GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	var res User
+
 	db, err := connectToDb()
 	if err != nil {
-		return res, err
+		return nil, err
 	}
 
-	query := `SELECT * FROM users WHERE email = $1;`
-	if err := db.GetContext(ctx, &res, query, email); err != nil {
+	query := `SELECT * FROM users WHERE LOWER(email) = $1;`
+	if err := db.GetContext(ctx, &res, query, strings.ToLower(email)); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return res, fmt.Errorf("%w: пользователь с почтой %s не существует", ErrNotFound, email)
+			return nil, fmt.Errorf("%w: пользователь с почтой %s не существует", ErrNotFound, email)
 		}
-		return res, fmt.Errorf("getting user by email: select error: %w", err)
+		return nil, fmt.Errorf("getting user by email: select error: %w", err)
 	}
-	return res, nil
+
+	res.finallyFieldsProcessing()
+	return &res, nil
 }
 
-func GetUserById(ctx context.Context, id uint32) (User, error) {
+func GetUserById(ctx context.Context, id uint32) (*User, error) {
 
 	var res User
 	db, err := connectToDb()
 	if err != nil {
-		return res, err
+		return nil, err
 	}
 
 	query := `SELECT * FROM users WHERE id = $1;`
 	if err := db.GetContext(ctx, &res, query, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return res, fmt.Errorf("%w: пользователь с id = %d не существует", ErrNotFound, id)
+			return nil, fmt.Errorf("%w: пользователь с id = %d не существует", ErrNotFound, id)
 		}
-		return res, fmt.Errorf("getting user by id: select error: %w", err)
+		return nil, fmt.Errorf("getting user by id: select error: %w", err)
 	}
-	return res, nil
+
+	res.finallyFieldsProcessing()
+	return &res, nil
 }
 
-func GetUserByKey(ctx context.Context, sortBy *pb.By, sortValue string) ([]User, error) {
+func GetUserByKey(ctx context.Context, sortBy *pb.By, sortValue string) ([]*User, error) {
 
-	var res []User
+	var res []*User
 	db, err := connectToDb()
 	if err != nil {
-		return res, err
+		return nil, err
 	}
 
 	query := `SELECT * FROM users`
@@ -178,24 +190,28 @@ func GetUserByKey(ctx context.Context, sortBy *pb.By, sortValue string) ([]User,
 		query += " WHERE " + strings.ToLower(sortBy.String()) + " LIKE $1"
 	}
 
-	if err := db.SelectContext(ctx, &res, query, "%"+sortValue+"%"); err != nil {
+	if err := db.SelectContext(ctx, res, query, "%"+sortValue+"%"); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return res, fmt.Errorf("%w: пользователь с полем %s = %s не существует", ErrNotFound, sortBy.String(), sortValue)
+			return nil, fmt.Errorf("%w: пользователь с полем %s = %s не существует", ErrNotFound, sortBy.String(), sortValue)
 		}
-		return res, fmt.Errorf("getting user by id: select error: %w", err)
+		return nil, fmt.Errorf("getting user by id: select error: %w", err)
+	}
+
+	for _, u := range res {
+		u.finallyFieldsProcessing()
 	}
 	return res, nil
 }
 
 func UpdateUser(ctx context.Context, user User) error {
 
-	test, err := GetUserById(ctx, user.ID)
+	test, err := GetUserById(ctx, user.Id)
 	if err != nil {
 		return fmt.Errorf("updating user: %w", err)
 	}
 	if _, err := GetUserByEmail(ctx, user.Email); !errors.Is(err, sql.ErrNoRows) && test.Email != user.Email {
 		if err == nil {
-			return fmt.Errorf("%w: пользователь с почтой %s уже существует", ErrBadRequest, user.Email)
+			return fmt.Errorf("%w: пользователь с почтой %s уже существует", ErrConflict, user.Email)
 		}
 		return fmt.Errorf("updating user: %w", err)
 	}
@@ -211,7 +227,7 @@ func UpdateUser(ctx context.Context, user User) error {
 
 	if _, err := db.NamedExecContext(ctx, query, &user); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("%w: пользователь с id = %d не существует", ErrNotFound, user.ID)
+			return fmt.Errorf("%w: пользователь с id = %d не существует", ErrNotFound, user.Id)
 		}
 		return fmt.Errorf("updating user: update error: %w", err)
 	}
