@@ -4,7 +4,7 @@ import (
 	"context"
 	"cu_coworking_book/go/internal/db"
 	"cu_coworking_book/go/internal/handlers"
-	"cu_coworking_book/go/internal/models"
+	"cu_coworking_book/go/internal/utils"
 	"errors"
 	"log"
 	"net/http"
@@ -31,9 +31,9 @@ func main() {
 	}
 
 	durationUser := os.Getenv("JWT_USER_DURATION")
-	models.CheckJEnvWTDuration(durationUser, false)
+	utils.CheckEnvJWTDuration(durationUser, false)
 	durationAdmin := os.Getenv("JWT_ADMIN_DURATION")
-	models.CheckJEnvWTDuration(durationAdmin, true)
+	utils.CheckEnvJWTDuration(durationAdmin, true)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
@@ -42,6 +42,7 @@ func main() {
 	mux.HandleFunc("/api/v1/signup", handlers.SignupUser)
 	mux.HandleFunc("/api/v1/login", handlers.LoginUser)
 	mux.HandleFunc("PUT /api/v1/user", handlers.UpdateUser)
+	mux.HandleFunc("/api/v1/user/password", handlers.UpdatePassword)
 	mux.HandleFunc("/api/v1/user", handlers.MethodNotAllowedException)
 	mux.HandleFunc("/", handlers.NotFoundException)
 

@@ -3,6 +3,7 @@ package handlers
 import (
 	"cu_coworking_book/go/internal/db"
 	"cu_coworking_book/go/internal/models"
+	"cu_coworking_book/go/internal/utils"
 	"errors"
 	"fmt"
 	"net/http"
@@ -32,7 +33,7 @@ func UpdateUser(w http.ResponseWriter, req *http.Request) {
 	}
 
 	tokenString := req.Header.Get("Authorization")
-	claims, err := models.ParseJWT(tokenString)
+	claims, err := utils.ParseJWT(tokenString)
 	if err != nil {
 		errDto := models.NewExceptionDto(
 			http.StatusUnauthorized,
@@ -59,21 +60,6 @@ func UpdateUser(w http.ResponseWriter, req *http.Request) {
 		userDb.SecondName = user.SecondName
 	}
 
-	res := models.UserEmailPassword{
-		Email:    userDb.Email,
-		Password: user.Password,
-	}
-	if _, err := res.ComparePassword(ctx); err != nil {
-		errDto := models.ExceptionDto{ErrorMessage: err.Error()}
-		if errors.Is(err, db.ErrNotFound) {
-			errDto.StatusCode = http.StatusNotFound
-		} else {
-			errDto.StatusCode = http.StatusUnauthorized
-		}
-		errDto.WriteException(w)
-		return
-	}
-
 	if err := db.UpdateUser(ctx, userDb); err != nil {
 		errDto := models.NewExceptionDto(
 			http.StatusInternalServerError,
@@ -89,16 +75,77 @@ func UpdateUser(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	newToken, err := res.GenerateJWT(ctx)
+	newToken, err := utils.GenerateJWT(ctx, userDb.Email)
 	if err != nil {
 		errDto := models.NewExceptionDto(
 			http.StatusInternalServerError,
 			err.Error(),
 		)
+		if errors.Is(err, db.ErrNotFound) {
+			errDto.StatusCode = http.StatusNotFound
+		}
 		errDto.WriteException(w)
 		return
 	}
 	w.Header().Set("Authorization", newToken)
+	w.Header().Del("Content-Type")
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func UpdatePassword(w http.ResponseWriter, req *http.Request) {
+
+	if req.Method != http.MethodPost {
+		errDto := models.NewExceptionDto(
+			http.StatusMethodNotAllowed,
+			"допустимым методом является только PUT",
+		)
+		errDto.WriteException(w)
+		return
+	}
+
+	ctx := req.Context()
+
+	var user models.UserUpdatePassword
+	if err := models.JsonToStruct(&user, req.Body); err != nil {
+		errDto := models.NewExceptionDto(
+			http.StatusBadRequest,
+			fmt.Sprintf("%s, допустимые поля: %s", models.ErrBadBody.Error(), "new_password, old_password"),
+		)
+		errDto.WriteException(w)
+		return
+	}
+
+	if err := user.Validation(); err != nil {
+		errDto := models.NewExceptionDto(
+			http.StatusBadRequest,
+			err.Error(),
+		)
+		errDto.WriteException(w)
+		return
+	}
+
+	tokenString := req.Header.Get("Authorization")
+	claims, err := utils.ParseJWT(tokenString)
+	if err != nil {
+		errDto := models.NewExceptionDto(
+			http.StatusUnauthorized,
+			err.Error(),
+		)
+		errDto.WriteException(w)
+		return
+	}
+
+	if err := db.UpdatePassword(ctx, claims.Id, user.NewPassword); err != nil {
+		errDto := models.NewExceptionDto(
+			http.StatusInternalServerError,
+			err.Error(),
+		)
+		if errors.Is(err, db.ErrNotFound) {
+			errDto.StatusCode = http.StatusNotFound
+		}
+		errDto.WriteException(w)
+		return
+	}
 	w.Header().Del("Content-Type")
 	w.WriteHeader(http.StatusNoContent)
 }
