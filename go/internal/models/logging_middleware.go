@@ -19,14 +19,13 @@ func NewLoggingResponseWriter(w http.ResponseWriter) *loggingResponseWriter {
 
 func (lrw *loggingResponseWriter) WriteHeader(code int) {
 	lrw.StatusCode = code
+	lrw.StatusMessage = http.StatusText(code)
 	lrw.ResponseWriter.WriteHeader(code)
 }
 
 func (lrw *loggingResponseWriter) Write(b []byte) (int, error) {
 	var errDto ExceptionDto
 	JsonToStruct(&errDto, bytes.NewReader(b))
-	if errDto.ErrorMessage == "" {
-		lrw.StatusMessage = http.StatusText(lrw.StatusCode)
-	}
+	lrw.StatusMessage += ": " + errDto.ErrorMessage
 	return lrw.ResponseWriter.Write(b)
 }

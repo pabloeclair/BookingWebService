@@ -42,13 +42,13 @@ func (r Role) String() string {
 	return "UNKNOWN"
 }
 
-type UserLoginRequest struct {
+type UserEmailPassword struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
 // Сверяет пароль пользователя
-func (u *UserLoginRequest) ComparePassword(ctx context.Context) (*db.User, error) {
+func (u *UserEmailPassword) ComparePassword(ctx context.Context) (*db.User, error) {
 	user, err := db.GetUserByEmail(ctx, u.Email)
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func (u *UserLoginRequest) ComparePassword(ctx context.Context) (*db.User, error
 	return user, nil
 }
 
-func (u *UserLoginRequest) GenerateJWT(ctx context.Context) (string, error) {
+func (u *UserEmailPassword) GenerateJWT(ctx context.Context) (string, error) {
 	res, err := u.ComparePassword(ctx)
 	if err != nil {
 		return "", nil
@@ -92,16 +92,6 @@ func (u *UserLoginRequest) GenerateJWT(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("jwt error: %w", err)
 	}
 	return tokenString, nil
-}
-
-type UserLoginResponse struct {
-	Id         string `json:"id"`
-	Email      string `json:"email"`
-	FirstName  string `json:"first_name"`
-	SecondName string `json:"second_name"`
-	Patronymic string `json:"patronymic"`
-	Password   string `json:"password"`
-	Role       string `json:"role"`
 }
 
 type UserSignupRequest struct {
@@ -141,4 +131,28 @@ func (userDto *UserSignupRequest) ToStructForDB(hashedPassword []byte) db.User {
 
 type UserSignupResponse struct {
 	Id uint32 `json:"id"`
+}
+
+type UserUpdateRequest struct {
+	Email      string `json:"email"`
+	FirstName  string `json:"first_name"`
+	SecondName string `json:"second_name"`
+	Patronymic string `json:"patronymic"`
+	Password   string `json:"password"`
+}
+
+func (u *UserUpdateRequest) Validation() error {
+	if len(strings.Split(u.Email, " ")) > 1 {
+		return fmt.Errorf("%w: поле email должен содержать лишь только адрес почты", ErrBadBody)
+	}
+	if len(strings.Split(u.FirstName, " ")) > 1 {
+		return fmt.Errorf("%w: поле имени должно содержать лишь только само имя", ErrBadBody)
+	}
+	if len(strings.Split(u.SecondName, " ")) > 1 {
+		return fmt.Errorf("%w: поле фамилии должно содержать лишь только саму фамилию", ErrBadBody)
+	}
+	if len(strings.Split(u.Patronymic, " ")) > 1 {
+		return fmt.Errorf("%w: поле отчества должно содержать лишь только само отчество", ErrBadBody)
+	}
+	return nil
 }
