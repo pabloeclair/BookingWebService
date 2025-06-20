@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"cu_coworking_book/go/internal/models"
+	"cu_coworking_book/go/internal/utils"
 	"log"
 	"net/http"
 	"slices"
@@ -61,7 +62,7 @@ func AuthMiddleware(handler http.Handler) http.Handler {
 			return
 		}
 
-		claims, err := models.ParseJWT(tokenString)
+		claims, err := utils.ParseJWT(tokenString)
 		if err != nil {
 			log.Printf("%s %s: %d - %s", r.Method, r.URL.Path, http.StatusInternalServerError, err.Error())
 			errDto := models.ExceptionDto{

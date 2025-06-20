@@ -3,6 +3,7 @@ package handlers
 import (
 	"cu_coworking_book/go/internal/db"
 	"cu_coworking_book/go/internal/models"
+	"cu_coworking_book/go/internal/utils"
 	"errors"
 	"fmt"
 	"net/http"
@@ -118,15 +119,23 @@ func LoginUser(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if _, err := user.ComparePassword(ctx); err != nil {
-		errDto := models.NewExceptionDto(
-			http.StatusUnauthorized,
-			fmt.Sprintf("%s: неверный пароль", models.ErrPermissionDenied.Error()),
-		)
+		var errDto models.ExceptionDto
+		if errors.Is(err, db.ErrNotFound) {
+			errDto = models.NewExceptionDto(
+				http.StatusNotFound,
+				err.Error(),
+			)
+		} else {
+			errDto = models.NewExceptionDto(
+				http.StatusUnauthorized,
+				fmt.Sprintf("%s: неверный пароль", models.ErrPermissionDenied.Error()),
+			)
+		}
 		errDto.WriteException(w)
 		return
 	}
 
-	token, err := user.GenerateJWT(ctx)
+	token, err := utils.GenerateJWT(ctx, user.Email)
 	if err != nil {
 		errDto := models.NewExceptionDto(
 			http.StatusInternalServerError,
