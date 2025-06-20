@@ -31,9 +31,9 @@ func main() {
 	}
 
 	durationUser := os.Getenv("JWT_USER_DURATION")
-	models.CheckJWTDuration(durationUser, false)
+	models.CheckJEnvWTDuration(durationUser, false)
 	durationAdmin := os.Getenv("JWT_ADMIN_DURATION")
-	models.CheckJWTDuration(durationAdmin, true)
+	models.CheckJEnvWTDuration(durationAdmin, true)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
@@ -41,11 +41,13 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/signup", handlers.SignupUser)
 	mux.HandleFunc("/api/v1/login", handlers.LoginUser)
-	mux.HandleFunc("/", handlers.NotFoundError)
+	mux.HandleFunc("PUT /api/v1/user", handlers.UpdateUser)
+	mux.HandleFunc("/api/v1/user", handlers.MethodNotAllowedException)
+	mux.HandleFunc("/", handlers.NotFoundException)
 
 	s := http.Server{
 		Addr:    addrs,
-		Handler: handlers.LoggingMiddleware(handlers.AuthMiddleware(mux)),
+		Handler: handlers.AuthMiddleware(handlers.LoggingMiddleware(mux)),
 	}
 	hasError := false
 
