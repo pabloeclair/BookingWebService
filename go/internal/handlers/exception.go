@@ -5,14 +5,16 @@ import (
 	"net/http"
 )
 
+// Сообщает о несуществуеющей адресной строке
 func NotFoundException(w http.ResponseWriter, req *http.Request) {
 	errDto := models.NewExceptionDto(
 		http.StatusNotFound,
-		"адресный путь не найден",
+		"адресная строка не найдена",
 	)
 	errDto.WriteException(w)
 }
 
+// Сообщает о неверном методе запроса
 func MethodNotAllowedException(w http.ResponseWriter, req *http.Request) {
 	errDto := models.NewExceptionDto(
 		http.StatusMethodNotAllowed,

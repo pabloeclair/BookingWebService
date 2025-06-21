@@ -11,11 +11,16 @@ var (
 	ErrPermissionDenied error = errors.New("доступ запрещен")
 )
 
+// Модель ошибки
 type ExceptionDto struct {
-	StatusCode   int    `json:"status_code"`
+	// HTTP код ошибки
+	StatusCode int `json:"status_code"`
+
+	// Отображаемое сообщение об ошибке
 	ErrorMessage string `json:"error_message"`
 }
 
+// Конструктор ExceptionDto
 func NewExceptionDto(statusCode int, errorMessage string) ExceptionDto {
 	return ExceptionDto{
 		StatusCode:   statusCode,
@@ -23,6 +28,7 @@ func NewExceptionDto(statusCode int, errorMessage string) ExceptionDto {
 	}
 }
 
+// Возвращение ошибки в виде ответа на запрос и установка HTTP статуса
 func (errDto *ExceptionDto) WriteException(w http.ResponseWriter) {
 	res, err := StructToJson(errDto)
 	if err != nil {

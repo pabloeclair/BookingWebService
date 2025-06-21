@@ -18,8 +18,10 @@ var (
 	ErrConDB    error = errors.New("ошибка подключения к базе данных")
 	ErrConflict error = errors.New("произошел конфликт данных")
 	ErrNotFound error = errors.New("по запросу ничего не было найдено")
+	ErrBadKey   error = errors.New("передан некорректный ключ")
 )
 
+// Структура пользователя для сохранения в базе данных.
 type User struct {
 	Id         uint32 `db:"id"`
 	Email      string `db:"email"`
@@ -30,6 +32,7 @@ type User struct {
 	Role       string `db:"role"`
 }
 
+// Преобразование ФИО в Title Case, т.к. изначально эти данные передаются в нижнем регистре
 func (u *User) finallyFieldsProcessing() {
 	u.FirstName = strings.ToTitle(string(u.FirstName[0])) + u.FirstName[1:]
 	u.SecondName = strings.ToTitle(string(u.SecondName[0])) + u.SecondName[1:]
@@ -38,18 +41,18 @@ func (u *User) finallyFieldsProcessing() {
 	}
 }
 
+// Подключение к базе данных.
 func connectToDb() (*sqlx.DB, error) {
-
 	db, err := sqlx.Connect("pgx", os.Getenv("DSN"))
 	if err != nil {
-		return nil, fmt.Errorf("creating user: connection to db: %w", err)
+		return nil, fmt.Errorf("creating user: %w: %s", ErrConDB, err.Error())
 	}
 
 	return db, nil
 }
 
+// Создание таблицы пользователей, если ее не существует.
 func CreateTable() error {
-
 	db, err := connectToDb()
 	if err != nil {
 		return err
@@ -77,7 +80,7 @@ func CreateTable() error {
 	return nil
 }
 
-// удаление таблицы для интеграционных тестов
+// Удаление таблицы. Применяется для интеграционных тестов.
 func DeleteTable() error {
 
 	db, err := connectToDb()
@@ -96,8 +99,13 @@ func DeleteTable() error {
 	return nil
 }
 
-func CreateUser(ctx context.Context, user User) (uint32, error) {
+// Сохранение нового пользователя в базу данных. Может вернуть ErrConflict и ErrNotFound.
+func CreateUser(ctx context.Context, user *User) (uint32, error) {
+	// Принимает контекст запроса и указатель на объект user с описанием всех
+	// полей, кроме id. Также необязательным полем является Patronymic. При успехе
+	// возвращает id пользователя.
 
+	// в случае, если пользователь с указанной почтой уже существует, возвращает ErrConflict.
 	if _, err := GetUserByEmail(ctx, user.Email); !errors.Is(err, ErrNotFound) {
 		if err != nil {
 			return 0, fmt.Errorf("creating user: ошибка проверки почты: %w", err)
@@ -111,6 +119,7 @@ func CreateUser(ctx context.Context, user User) (uint32, error) {
 	}
 
 	var id uint32
+	// если пользователь первый, он обретает права MAIN_ADMIN
 	if err = db.GetContext(ctx, &id, `SELECT id FROM users LIMIT 1`); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			user.Role = pb.Role_MAIN_ADMIN.String()
@@ -119,6 +128,7 @@ func CreateUser(ctx context.Context, user User) (uint32, error) {
 		}
 	}
 
+	// сохранение пользователя в бд
 	queryInsert := `INSERT INTO users (email, first_name, second_name, patronymic, password, role) 
 		VALUES (:email, :first_name, :second_name, :patronymic, :password, :role);`
 	if _, err = db.NamedExecContext(ctx, queryInsert, &user); err != nil {
@@ -126,6 +136,7 @@ func CreateUser(ctx context.Context, user User) (uint32, error) {
 	}
 
 	var idRes uint32
+	// получение id пользователя и проверка, что все успешно сохранилось
 	querySelect := `SELECT id FROM users WHERE email = $1;`
 	if err := db.GetContext(ctx, &idRes, querySelect, user.Email); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -137,14 +148,17 @@ func CreateUser(ctx context.Context, user User) (uint32, error) {
 	return idRes, nil
 }
 
+// Получение информации о пользователе по email. Может вернуть ErrNotFound.
 func GetUserByEmail(ctx context.Context, email string) (*User, error) {
-	var res User
+	// Принимает контекст запроса и строку почты. При успехе возвращает указатель
+	// на объект пользователя.
 
 	db, err := connectToDb()
 	if err != nil {
 		return nil, err
 	}
 
+	var res User
 	query := `SELECT * FROM users WHERE LOWER(email) = $1;`
 	if err := db.GetContext(ctx, &res, query, strings.ToLower(email)); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -157,14 +171,17 @@ func GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	return &res, nil
 }
 
+// Получение пользователя по id. Может вернуть ErrNotFound.
 func GetUserById(ctx context.Context, id uint32) (*User, error) {
+	// Принимает контекст запроса и id пользователя. При успехе возвращает указатель
+	// на объект пользователя.
 
-	var res User
 	db, err := connectToDb()
 	if err != nil {
 		return nil, err
 	}
 
+	var res User
 	query := `SELECT * FROM users WHERE id = $1;`
 	if err := db.GetContext(ctx, &res, query, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -177,23 +194,24 @@ func GetUserById(ctx context.Context, id uint32) (*User, error) {
 	return &res, nil
 }
 
+// Получение списка пользователей по ключу. Может вернуть ErrBadKey.
 func GetUserByKey(ctx context.Context, sortBy *pb.By, sortValue string) ([]*User, error) {
+	// Принимает контекст запроса, категорию сортировки и искомое значение.
+	// При успехе возвращает указатель на список объектов пользователей или пустой список,
+	// если ничего не найдено.
 
-	var res []*User
 	db, err := connectToDb()
 	if err != nil {
 		return nil, err
 	}
 
+	// todo: избавиться от sql инъекции
+	var res []*User
 	query := `SELECT * FROM users`
 	if sortBy != pb.By_NONE.Enum() {
 		query += " WHERE " + strings.ToLower(sortBy.String()) + " LIKE $1"
 	}
-
-	if err := db.SelectContext(ctx, res, query, "%"+sortValue+"%"); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("%w: пользователь с полем %s = %s не существует", ErrNotFound, sortBy.String(), sortValue)
-		}
+	if err := db.SelectContext(ctx, &res, query, "%"+sortValue+"%"); err != nil {
 		return nil, fmt.Errorf("getting user by id: select error: %w", err)
 	}
 
@@ -203,13 +221,17 @@ func GetUserByKey(ctx context.Context, sortBy *pb.By, sortValue string) ([]*User
 	return res, nil
 }
 
-func UpdateUser(ctx context.Context, user User) error {
+// Обновление информации о пользователе в базе данных. Может вернуть ErrConflict и ErrNotFound.
+func UpdateUser(ctx context.Context, user *User) error {
+	// Принимает контекст запроса и указатель на объект пользователя с полной информацией, кроме роли.
+	// При успехе не вернет ошибку.
 
-	test, err := GetUserById(ctx, user.Id)
+	// получение старой почты
+	old, err := GetUserById(ctx, user.Id)
 	if err != nil {
 		return fmt.Errorf("updating user: %w", err)
 	}
-	if _, err := GetUserByEmail(ctx, user.Email); !errors.Is(err, sql.ErrNoRows) && test.Email != user.Email {
+	if _, err := GetUserByEmail(ctx, user.Email); !errors.Is(err, sql.ErrNoRows) && old.Email != user.Email {
 		if err == nil {
 			return fmt.Errorf("%w: пользователь с почтой %s уже существует", ErrConflict, user.Email)
 		}
@@ -221,6 +243,7 @@ func UpdateUser(ctx context.Context, user User) error {
 		return err
 	}
 
+	// сохранение данных
 	query := `UPDATE users 
 		SET email = :email, first_name = :first_name, second_name = :second_name, 
 		patronymic = :patronymic WHERE id = :id`
@@ -235,15 +258,18 @@ func UpdateUser(ctx context.Context, user User) error {
 	return nil
 }
 
+// Обновление пароля пользователя. Может вернуть ErrNotFound.
 func UpdatePassword(ctx context.Context, id uint32, password string) error {
+	// Принимает контекст запроса, id и зашифрованный пароль пользователя.
+	// При успехе не вернет ошибку.
 
 	db, err := connectToDb()
 	if err != nil {
 		return fmt.Errorf("updating password: %w", err)
 	}
 
+	// сохранение пароля
 	query := `UPDATE users SET password = $1 WHERE id = $2`
-
 	if _, err := db.ExecContext(ctx, query, password, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("%w: пользователь с id = %d не существует", ErrNotFound, id)
@@ -254,7 +280,9 @@ func UpdatePassword(ctx context.Context, id uint32, password string) error {
 	return nil
 }
 
+// Удаляет пользователя по id. Может вернуть ErrNotFound.
 func DeleteUser(ctx context.Context, id uint32) error {
+	// Принимает контекст запроса и id пользователя. При успехе не вернет ошибку.
 
 	db, err := connectToDb()
 	if err != nil {

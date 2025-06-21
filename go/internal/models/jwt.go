@@ -4,6 +4,7 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
+// Модель данных о пользователе в jwt токене
 type UserClaim struct {
 	Id         uint32 `json:"id"`
 	Email      string `json:"email"`

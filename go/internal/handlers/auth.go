@@ -11,12 +11,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Регистрация нового пользователя
+// Регистрация нового пользователя.
 func SignupUser(w http.ResponseWriter, req *http.Request) {
 	// Первый пользователь автоматически становится MAIN_ADMIN, а остальные последующие — USER.
-
+	//
 	// - Если пользователь с указанной почтой уже существует, то вернется ошибка Conflict.
-
+	//
 	// При недопустимом поле запроса – Bad Request.
 	// При любых других ошибках – Internal Server.
 	// Показатель успеха — статус Created и id пользователя.
@@ -33,7 +33,7 @@ func SignupUser(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	var user models.UserSignupRequest
 
-	// некорректное тело запроса
+	// получение тела запроса
 	if err := models.JsonToStruct(&user, req.Body); err != nil {
 		errDto := models.NewExceptionDto(
 			http.StatusBadRequest,
@@ -42,7 +42,6 @@ func SignupUser(w http.ResponseWriter, req *http.Request) {
 		errDto.WriteException(w)
 		return
 	}
-
 	if err := user.Validation(); err != nil {
 		errDto := models.NewExceptionDto(
 			http.StatusBadRequest,
@@ -52,6 +51,7 @@ func SignupUser(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// шифрование пароля
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 12)
 	if err != nil {
 		errDto := models.NewExceptionDto(
@@ -62,7 +62,7 @@ func SignupUser(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// обращение к бд
+	// сохранение пользователя
 	id, err := db.CreateUser(ctx, user.ToStructForDB(hashedPassword))
 	if err != nil {
 		errDto := models.NewExceptionDto(
@@ -76,6 +76,7 @@ func SignupUser(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// отправление ответа
 	res, err := models.StructToJson(models.UserSignupResponse{Id: id})
 	if err != nil {
 		errDto := models.NewExceptionDto(
@@ -89,7 +90,7 @@ func SignupUser(w http.ResponseWriter, req *http.Request) {
 	w.Write(res)
 }
 
-// Авторизация пользователя и генерация JWT-токена
+// Авторизация пользователя и генерация JWT-токена.
 func LoginUser(w http.ResponseWriter, req *http.Request) {
 	// - Если пользователь с указанной почтой не найден, вернется ошибка NotFound.
 	// - Если пароль пользователя не совпал — Unauthorized.
@@ -98,6 +99,7 @@ func LoginUser(w http.ResponseWriter, req *http.Request) {
 	// или указано не число в JWT_USER_DURATION.
 	// Показатель успеха — статус Created и JWT-токен в заголовке Authorization.
 
+	// проверка метода запроса
 	if req.Method != http.MethodPost {
 		errDto := models.NewExceptionDto(
 			http.StatusMethodNotAllowed,
@@ -109,6 +111,7 @@ func LoginUser(w http.ResponseWriter, req *http.Request) {
 
 	ctx := req.Context()
 	var user models.UserEmailPassword
+	// получение тела запроса
 	if err := models.JsonToStruct(&user, req.Body); err != nil {
 		errDto := models.NewExceptionDto(
 			http.StatusBadRequest,
@@ -118,6 +121,7 @@ func LoginUser(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// сравнение пароля
 	if _, err := user.ComparePassword(ctx); err != nil {
 		var errDto models.ExceptionDto
 		if errors.Is(err, db.ErrNotFound) {
@@ -135,6 +139,7 @@ func LoginUser(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// генерация jwt и отправление ответа
 	token, err := utils.GenerateJWT(ctx, user.Email)
 	if err != nil {
 		errDto := models.NewExceptionDto(

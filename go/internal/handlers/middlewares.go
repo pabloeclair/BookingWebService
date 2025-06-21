@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// Мидлвейр для логирования результатов обработки запросов.
 func LoggingMiddleware(handler http.Handler) http.Handler {
 	// Данный мидлвейр фиксирует все статусы и сообщения после выполнения работы
 	// хэндлеров и логирует их на терминал.
@@ -20,7 +21,7 @@ func LoggingMiddleware(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		// возвращение ошибки Bad Request
+		// проверка типа тела запроса
 		if r.Header.Get("Content-Type") == "" || r.Header.Get("Content-Type") != "application/json" {
 			errDto := models.ExceptionDto{
 				StatusCode:   http.StatusBadRequest,
@@ -43,7 +44,11 @@ func LoggingMiddleware(handler http.Handler) http.Handler {
 	})
 }
 
+// Мидлвейр для проверки корректности jwt и наличия доступа пользователя.
 func AuthMiddleware(handler http.Handler) http.Handler {
+	// Данный мидлверй проверяет jwt токен каждого запроса, отправленный
+	// по пути /api/v1/user или /api/v1/admin. Кроме того, во втором случае
+	// проверяется также и роль пользователя.
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.URL.Path, "/api/v1/user") {
@@ -51,6 +56,7 @@ func AuthMiddleware(handler http.Handler) http.Handler {
 			return
 		}
 
+		// получение jwt токена
 		tokenString := r.Header.Get("Authorization")
 		if tokenString == "" {
 			log.Printf("%s %s: %d - отсутствует JWT-токен", r.Method, r.URL.Path, http.StatusForbidden)
@@ -62,6 +68,7 @@ func AuthMiddleware(handler http.Handler) http.Handler {
 			return
 		}
 
+		// получение данных о пользователе из jwt токена
 		claims, err := utils.ParseJWT(tokenString)
 		if err != nil {
 			log.Printf("%s %s: %d - %s", r.Method, r.URL.Path, http.StatusInternalServerError, err.Error())
@@ -73,12 +80,8 @@ func AuthMiddleware(handler http.Handler) http.Handler {
 			return
 		}
 
-		roles := []string{
-			models.Role_USER.String(),
-			models.Role_ADMIN.String(),
-			models.Role_MAIN_ADMIN.String(),
-		}
-		if !slices.Contains(roles, claims.Role) {
+		// проверка корректности роли
+		if !slices.Contains(models.Role_array, claims.Role) {
 			log.Printf("%s %s: %d - отказано в доступе", r.Method, r.URL.Path, http.StatusForbidden)
 			errDto := models.ExceptionDto{
 				StatusCode:   http.StatusForbidden,
