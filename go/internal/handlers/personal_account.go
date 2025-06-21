@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 func UpdateUser(w http.ResponseWriter, req *http.Request) {
@@ -46,21 +47,21 @@ func UpdateUser(w http.ResponseWriter, req *http.Request) {
 	userDb := db.User{
 		Id:         claims.Id,
 		Email:      claims.Email,
-		FirstName:  claims.FirstName,
-		SecondName: claims.SecondName,
-		Patronymic: user.Patronymic,
+		FirstName:  strings.ToLower(claims.FirstName),
+		SecondName: strings.ToLower(claims.SecondName),
+		Patronymic: strings.ToLower(user.Patronymic),
 	}
 	if user.Email != "" {
-		userDb.Email = user.Email
+		userDb.Email = strings.ToLower(user.Email)
 	}
 	if user.FirstName != "" {
-		userDb.FirstName = user.FirstName
+		userDb.FirstName = strings.ToLower(user.FirstName)
 	}
 	if user.SecondName != "" {
-		userDb.SecondName = user.SecondName
+		userDb.SecondName = strings.ToLower(user.SecondName)
 	}
 
-	if err := db.UpdateUser(ctx, userDb); err != nil {
+	if err := db.UpdateUser(ctx, &userDb); err != nil {
 		errDto := models.NewExceptionDto(
 			http.StatusInternalServerError,
 			err.Error(),
@@ -105,7 +106,7 @@ func UpdatePassword(w http.ResponseWriter, req *http.Request) {
 
 	ctx := req.Context()
 
-	var user models.UserUpdatePassword
+	var user models.UserUpdatePasswordRequest
 	if err := models.JsonToStruct(&user, req.Body); err != nil {
 		errDto := models.NewExceptionDto(
 			http.StatusBadRequest,
@@ -135,6 +136,22 @@ func UpdatePassword(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	emailPassword := models.UserEmailPassword{Email: claims.Email, Password: user.OldPassword}
+	if _, err := emailPassword.ComparePassword(ctx); err != nil {
+		errDto := models.NewExceptionDto(
+			http.StatusInternalServerError,
+			err.Error(),
+		)
+		if errors.Is(err, models.ErrPermissionDenied) {
+			errDto.StatusCode = http.StatusUnauthorized
+		}
+		if errors.Is(err, db.ErrNotFound) {
+			errDto.StatusCode = http.StatusNotFound
+		}
+		errDto.WriteException(w)
+		return
+	}
+
 	if err := db.UpdatePassword(ctx, claims.Id, user.NewPassword); err != nil {
 		errDto := models.NewExceptionDto(
 			http.StatusInternalServerError,
@@ -148,4 +165,34 @@ func UpdatePassword(w http.ResponseWriter, req *http.Request) {
 	}
 	w.Header().Del("Content-Type")
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func DeleteUser(w http.ResponseWriter, req *http.Request) {
+
+	tokenString := req.Header.Get("Authorization")
+	claims, err := utils.ParseJWT(tokenString)
+	if err != nil {
+		errDto := models.NewExceptionDto(
+			http.StatusUnauthorized,
+			err.Error(),
+		)
+		errDto.WriteException(w)
+		return
+	}
+
+	ctx := req.Context()
+	if claims.Role == models.Role_MAIN_ADMIN.String() {
+		errDto := models.ExceptionDto{
+			StatusCode:   http.StatusForbidden,
+			ErrorMessage: "MAIN_ADMIN должен сначала передать свои права другому пользователю",
+		}
+		errDto.WriteException(w)
+		return
+	}
+
+	id := claims.Id
+	if err := db.DeleteUser(ctx, id); err != nil {
+
+	}
+
 }
