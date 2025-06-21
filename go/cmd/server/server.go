@@ -41,8 +41,11 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/signup", handlers.SignupUser)
 	mux.HandleFunc("/api/v1/login", handlers.LoginUser)
+
 	mux.HandleFunc("PUT /api/v1/user", handlers.UpdateUser)
+	mux.HandleFunc("DELETE /api/v1/user", handlers.DeleteUser)
 	mux.HandleFunc("/api/v1/user/password", handlers.UpdatePassword)
+
 	mux.HandleFunc("/api/v1/user", handlers.MethodNotAllowedException)
 	mux.HandleFunc("/", handlers.NotFoundException)
 
