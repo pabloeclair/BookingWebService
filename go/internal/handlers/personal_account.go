@@ -10,11 +10,21 @@ import (
 	"strings"
 )
 
+// Обновление пользователя, кроме роли и пароля.
 func UpdateUser(w http.ResponseWriter, req *http.Request) {
+	// Принимает новые значения по полям, которые необходимо обновить и
+	// в случае успеха генерирует новый jwt токен.
+	//
+	// - Если отправлено некорректное тело запроса – BadRequest.
+	// - Если отправлен некорректный jwt-токен – Unauthorized.
+	// - Если отправлена уже существующая почта – Conflict.
+	// - Если id пользователя из jwt не найден – NotFound.
+	// Успех – NoContent.
 
 	ctx := req.Context()
-
 	var user models.UserUpdateRequest
+
+	// получение тела запроса
 	if err := models.JsonToStruct(&user, req.Body); err != nil {
 		errDto := models.NewExceptionDto(
 			http.StatusBadRequest,
@@ -23,7 +33,6 @@ func UpdateUser(w http.ResponseWriter, req *http.Request) {
 		errDto.WriteException(w)
 		return
 	}
-
 	if err := user.Validation(); err != nil {
 		errDto := models.NewExceptionDto(
 			http.StatusBadRequest,
@@ -33,6 +42,7 @@ func UpdateUser(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// получение jwt токена и старой информации о пользователе
 	tokenString := req.Header.Get("Authorization")
 	claims, err := utils.ParseJWT(tokenString)
 	if err != nil {
@@ -61,6 +71,7 @@ func UpdateUser(w http.ResponseWriter, req *http.Request) {
 		userDb.SecondName = strings.ToLower(user.SecondName)
 	}
 
+	// обновление пользователя в бд
 	if err := db.UpdateUser(ctx, &userDb); err != nil {
 		errDto := models.NewExceptionDto(
 			http.StatusInternalServerError,
@@ -76,6 +87,7 @@ func UpdateUser(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// генерация jwt токена и отправление ответа
 	newToken, err := utils.GenerateJWT(ctx, userDb.Email)
 	if err != nil {
 		errDto := models.NewExceptionDto(
@@ -93,9 +105,18 @@ func UpdateUser(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// Обновление пароля пользователя.
 func UpdatePassword(w http.ResponseWriter, req *http.Request) {
+	// Принимает значение нового пароля и обновляет старый.
+	//
+	// - Если метод запроса отличается от PUT – MethodNotAllowed
+	// - Если некорректное тело запроса – BadRequest
+	// - Если неверный пароль или некорректный jwt токен – Unauthorized
+	// - Если id пользователя не найден – NotFound
+	// Успех – NoContent
 
-	if req.Method != http.MethodPost {
+	// проверка метода запроса
+	if req.Method != http.MethodPut {
 		errDto := models.NewExceptionDto(
 			http.StatusMethodNotAllowed,
 			"допустимым методом является только PUT",
@@ -105,17 +126,17 @@ func UpdatePassword(w http.ResponseWriter, req *http.Request) {
 	}
 
 	ctx := req.Context()
-
 	var user models.UserUpdatePasswordRequest
+
+	// проверка тела запроса
 	if err := models.JsonToStruct(&user, req.Body); err != nil {
 		errDto := models.NewExceptionDto(
 			http.StatusBadRequest,
-			fmt.Sprintf("%s, допустимые поля: %s", models.ErrBadBody.Error(), "new_password, old_password"),
+			fmt.Sprintf("%s, допустимые поля: %s", models.ErrBadBody.Error(), "new_password"),
 		)
 		errDto.WriteException(w)
 		return
 	}
-
 	if err := user.Validation(); err != nil {
 		errDto := models.NewExceptionDto(
 			http.StatusBadRequest,
@@ -125,6 +146,7 @@ func UpdatePassword(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// проверка jwt токена
 	tokenString := req.Header.Get("Authorization")
 	claims, err := utils.ParseJWT(tokenString)
 	if err != nil {
@@ -136,22 +158,7 @@ func UpdatePassword(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	emailPassword := models.UserEmailPassword{Email: claims.Email, Password: user.OldPassword}
-	if _, err := emailPassword.ComparePassword(ctx); err != nil {
-		errDto := models.NewExceptionDto(
-			http.StatusInternalServerError,
-			err.Error(),
-		)
-		if errors.Is(err, models.ErrPermissionDenied) {
-			errDto.StatusCode = http.StatusUnauthorized
-		}
-		if errors.Is(err, db.ErrNotFound) {
-			errDto.StatusCode = http.StatusNotFound
-		}
-		errDto.WriteException(w)
-		return
-	}
-
+	// сохранение нового пароля в бд и отправление ответа
 	if err := db.UpdatePassword(ctx, claims.Id, user.NewPassword); err != nil {
 		errDto := models.NewExceptionDto(
 			http.StatusInternalServerError,
@@ -167,7 +174,16 @@ func UpdatePassword(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// Удаление пользователя.
 func DeleteUser(w http.ResponseWriter, req *http.Request) {
+	// Позволяет удалить свой аккаунт, если пользователь не является главным
+	// администратором — в противном случае ему необходимо передать свои права.
+	// Сделано это для того, чтобы гарантированно сохранялся один MAIN_ADMIN.
+	//
+	// Если jwt токен истек – Unauthorized.
+	// Если пользователь имеет роль MAIN_ADMIN – Forbidden.
+	// Если id пользователя не существует – NotFound.
+	// Успех – NoContent.
 
 	tokenString := req.Header.Get("Authorization")
 	claims, err := utils.ParseJWT(tokenString)
@@ -192,7 +208,16 @@ func DeleteUser(w http.ResponseWriter, req *http.Request) {
 
 	id := claims.Id
 	if err := db.DeleteUser(ctx, id); err != nil {
-
+		errDto := models.NewExceptionDto(
+			http.StatusInternalServerError,
+			err.Error(),
+		)
+		if errors.Is(err, db.ErrNotFound) {
+			errDto.StatusCode = http.StatusNotFound
+		}
+		errDto.WriteException(w)
+		return
 	}
-
+	w.Header().Del("Content-Type")
+	w.WriteHeader(http.StatusNoContent)
 }
