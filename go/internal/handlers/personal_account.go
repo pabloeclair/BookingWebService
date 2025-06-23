@@ -10,6 +10,48 @@ import (
 	"strings"
 )
 
+// Получение информации о пользователе по JWT
+func GetUserByJWT(w http.ResponseWriter, req *http.Request) {
+	// Если произошла любая ошибка с JWT – Unauthorized
+	// При любых других ошибках – InternalServer
+	// Показатель успеха – удачно переданный claim
+
+	tokenString := req.Header.Get("Authorization")
+	if tokenString == "" {
+		errDto := models.NewExceptionDto(
+			http.StatusUnauthorized,
+			"необходим JWT токен для получения пользователя",
+		)
+		errDto.WriteException(w)
+		return
+	}
+
+	token, err := utils.ParseJWT(tokenString)
+	if err != nil {
+		errDto := models.NewExceptionDto(
+			http.StatusInternalServerError,
+			err.Error(),
+		)
+		if !errors.Is(err, utils.ErrNotFoundSecretKey) {
+			errDto.StatusCode = http.StatusUnauthorized
+		}
+		errDto.WriteException(w)
+		return
+	}
+
+	tokenJson, err := models.StructToJson(&token)
+	if err != nil {
+		errDto := models.NewExceptionDto(
+			http.StatusInternalServerError,
+			err.Error(),
+		)
+		errDto.WriteException(w)
+		return
+	}
+
+	w.Write(tokenJson)
+}
+
 // Обновление пользователя, кроме роли и пароля.
 func UpdateUser(w http.ResponseWriter, req *http.Request) {
 	// Принимает новые значения по полям, которые необходимо обновить и
