@@ -43,6 +43,7 @@ func main() {
 	mux.HandleFunc("/api/v1/login", handlers.LoginUser)
 
 	// personal account
+	mux.HandleFunc("GET /api/v1/user", handlers.GetUserByJWT)
 	mux.HandleFunc("PUT /api/v1/user", handlers.UpdateUser)
 	mux.HandleFunc("DELETE /api/v1/user", handlers.DeleteUser)
 	mux.HandleFunc("/api/v1/user/password", handlers.UpdatePassword)
