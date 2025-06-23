@@ -11,13 +11,10 @@ import lombok.Setter;
 @AllArgsConstructor
 public class ErrorDto {
 
-    @JsonProperty("error_code")
-    private String errorCode;
+    @JsonProperty("status_code")
+    private String statusCode;
 
     @JsonProperty("error_message")
     private String errorMessage;
-
-    @JsonProperty("error_type")
-    private String errorType;
 }
 

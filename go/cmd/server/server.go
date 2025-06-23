@@ -18,6 +18,9 @@ import (
 
 func main() {
 
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
 	if len(os.Args) != 2 {
 		log.Fatal("ошибка запуска: необходимо ввести адрес запуска")
 	}
@@ -34,8 +37,8 @@ func main() {
 	durationAdmin := os.Getenv("JWT_ADMIN_DURATION")
 	utils.CheckEnvJWTDuration(durationAdmin, true)
 
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer cancel()
+	// timeout поднятия бд
+	<-time.After(time.Second * 3)
 
 	mux := http.NewServeMux()
 	// auth

@@ -1,15 +1,16 @@
 package centraluniversity.app.booking.models.user;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import centraluniversity.app.booking.pb.Role;
 import lombok.*;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class GetUserDto {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class UserDto {
     
     private Integer id;
     private String email;
@@ -21,7 +22,6 @@ public class GetUserDto {
     private String secondName;
     
     private String patronymic;
-    private String password;
     private Role role;
     
 }

@@ -1,4 +1,4 @@
-FROM golang:1.23.9 AS go_build
+FROM golang:1.23.9 AS users_build
 WORKDIR /app
 ENV PATH="$PATH:$(go env GOPATH)/bin"
 COPY go.mod go.sum /app/
@@ -6,15 +6,10 @@ RUN go mod download
 COPY /go/ /app/go/ 
 RUN go build -o server ./go/cmd/server
 
-FROM debian:bookworm-slim AS auth
+FROM debian:bookworm-slim AS users
 WORKDIR /app 
-COPY --from=go_build /app/server .
-CMD ["./server", "0.0.0.0:7001", "auth"]
-
-FROM debian:bookworm-slim AS admin
-WORKDIR /app 
-COPY --from=go_build /app/grpc_server .
-CMD ["./server", "0.0.0.0:7002", "admin"]
+COPY --from=users_build /app/server .
+CMD ["./server", "0.0.0.0:7070"]
 
 FROM gradle:8.14.0-jdk17 AS web_build
 WORKDIR /app

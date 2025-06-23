@@ -1,120 +1,57 @@
 package centraluniversity.app.booking.services;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import centraluniversity.app.booking.models.exception.ErrorDto;
 import centraluniversity.app.booking.models.exception.HttpStatusException;
-import centraluniversity.app.booking.models.user.SignupUserDto;
-import centraluniversity.app.booking.models.user.GetUserDto;
-import centraluniversity.app.booking.models.user.IdDto;
-import centraluniversity.app.booking.pb.AuthenticationGrpc;
-import centraluniversity.app.booking.pb.Email;
-import centraluniversity.app.booking.pb.GetResponse;
-import centraluniversity.app.booking.pb.Id;
-import centraluniversity.app.booking.pb.SignupRequest;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
+import centraluniversity.app.booking.models.user.UserDto;
+import lombok.NoArgsConstructor;
 
 @Service
+@NoArgsConstructor
 public class AuthService {
-    
-    private ManagedChannel channel;
-    private AuthenticationGrpc.AuthenticationBlockingStub stub;
+    private String url = "http://user-api:7070/api/v1/user";
 
-    /* Подключение к gRPC серверу авторизации. */
-    @PostConstruct
-    public void connectToServer() {
-        this.channel = ManagedChannelBuilder.forAddress("auth-service", 7001)
-            .usePlaintext()
-            .build();
-        this.stub = AuthenticationGrpc.newBlockingStub(channel);
-    }
-
-    /* Отсоединение от gRPC сервера авторизации. */
-    @PreDestroy
-    public void shutdown() {
-        if (this.channel != null) {
-            this.channel.shutdown();
-        }
-    }
-
-    /**
-     * Регистрация нового пользователя.
-     * @param user - полная информация о пользователе
-     * @return id пользователя
-     * @throws HttpStatusException CONFLICT (почта уже существует)
-     */
-    public IdDto createUser(SignupUserDto user) throws HttpStatusException {
-
-        SignupRequest req;
-        if (user.getPatronymic() == null || user.getPatronymic().isEmpty()) {
-            req = SignupRequest.newBuilder()
-                .setEmail(user.getEmail())
-                .setFirstName(user.getFirstName())
-                .setSecondName(user.getSecondName())
-                .setPassword(user.getPassword())
-                .build();
-        } else {
-            req = SignupRequest.newBuilder()
-                .setEmail(user.getEmail())
-                .setFirstName(user.getFirstName())
-                .setSecondName(user.getSecondName())
-                .setPatronymic(user.getPatronymic())
-                .setPassword(user.getPassword())
-                .build();
-        }
-
-        Id res;
+    public UserDto parseJwt(String tokenString) {
         try {
-            res = this.stub.signupUser(req);
-        } catch (StatusRuntimeException e) {
-            Status status = e.getStatus();
-            if (status.getCode() == Status.Code.ALREADY_EXISTS) {
-                throw new HttpStatusException(HttpStatus.CONFLICT, e.getMessage());
-            } 
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("Authorization", tokenString)
+                    .GET()
+                    .build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            return handleResponse(response);
+        } catch (Exception e) {
             throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        } 
-        
-        return new IdDto(res.getId());  
+        }
     }
 
-    /**
-     * Авторизация и получение информации о пользователе.
-     * @param email
-     * @return полная информация о пользователе
-     * @throws HttpStatusException NOT_FOUND (почта не найдена), UNAUTHORIZED (пароль не совпадает), FORBIDDEN (доступ запрещен)
-     */
-    public GetUserDto getUserByEmail(String email, String password) throws HttpStatusException {
-
-        Email req = Email.newBuilder().setEmail(email).setPassword(password).build();
-        GetResponse res;
-        try {
-            res = this.stub.loginUser(req);
-        } catch (StatusRuntimeException e) {
-            Status status = e.getStatus();
-            switch (status.getCode()) {
-                case NOT_FOUND:
-                    throw new HttpStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-                case UNAUTHENTICATED:
-                    throw new HttpStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
-                default:
-                    throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+    private UserDto handleResponse(HttpResponse<String> response) {
+        if (response.statusCode() == 200) {
+            try {
+                ObjectMapper objectMapper = new ObjectMapper();
+                return objectMapper.readValue(response.body(), UserDto.class);
+            } catch (Exception e) {
+                throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "ошибка парсинга ответа: " + e.getMessage());
+            }
+        } else {
+            try {
+                ObjectMapper objectMapper = new ObjectMapper();
+                ErrorDto errorDto = objectMapper.readValue(response.body(), ErrorDto.class);
+                throw new HttpStatusException(HttpStatus.valueOf(response.statusCode()), errorDto.getErrorMessage());
+            } catch (Exception e) {
+                throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "ошибка парсинга ошибки: " + e.getMessage());
             }
         }
-        
-        return new GetUserDto(
-            res.getId(),
-            res.getEmail(),
-            res.getFirstName(),
-            res.getSecondName(),
-            res.getPatronymic(),
-            res.getPassword(),
-            res.getRole()
-        ); 
     }
-
-}
+    
+} 

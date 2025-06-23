@@ -64,6 +64,9 @@ func (u *UserSignupRequest) Validation() error {
 	if len(strings.Split(u.Patronymic, " ")) > 1 {
 		return fmt.Errorf("%w: поле отчества должно содержать лишь только само отчество, если оно имеется", ErrBadBody)
 	}
+	if u.Password == "" {
+		return fmt.Errorf("%w: поле пароля должно быть не пустым", ErrBadBody)
+	}
 	return nil
 }
 

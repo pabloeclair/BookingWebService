@@ -5,6 +5,7 @@ import centraluniversity.app.booking.models.exception.HttpStatusException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -14,18 +15,24 @@ public class CommonExceptionController {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorDto> methodArgumentNotValidException(MethodArgumentNotValidException e) {
         return ResponseEntity.status(e.getStatusCode())
-                .body(new ErrorDto(e.getStatusCode().toString(), null, e.getMessage()));
+                .body(new ErrorDto(e.getStatusCode().toString(), e.getMessage()));
     }
 
     @ExceptionHandler(HttpStatusException.class)
     public ResponseEntity<ErrorDto> handleHttpStatusException(HttpStatusException e) {
         return ResponseEntity.status(e.getStatus())
-                .body(new ErrorDto(e.getStatus().toString(), null, e.getMessage()));
+                .body(new ErrorDto(e.getStatus().toString(), e.getMessage()));
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<ErrorDto> handleHttpStatusException(MissingRequestHeaderException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorDto("400 BAD REQUEST", e.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorDto> handleException(Exception e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorDto("500 INTERNAL_SERVER_ERROR", e.getClass().getName(), e.getMessage()));
+                .body(new ErrorDto("500 INTERNAL_SERVER_ERROR", e.getClass().getName() + ":" + e.getMessage()));
     }
 }

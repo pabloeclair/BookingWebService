@@ -11,27 +11,18 @@ services:
     volumes:
       - postgres_data:/data
 
-  auth-service:
+  user-api:
     build: 
       context: .
-      target: auth
-    container_name: auth-service
+      target: users
+    container_name: user-api
     environment:
       - DSN=${DSN}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_USER_DURATION=${JWT_USER_DURATION}
+      - JWT_ADMIN_DURATION=${JWT_USER_DURATION}
     ports:
-      - "7001:7001"
-    depends_on:
-      - db
-  
-  admin-service:
-    build: 
-      context: .
-      target: admin
-    container_name: admin-service
-    environment:
-      - DSN=${DSN}
-    ports:
-      - "7002:7002"
+      - "7070:7070"
     depends_on:
       - db
   
@@ -44,11 +35,11 @@ services:
       - JAVA_SOURCE=${JAVA_SOURCE}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - JWT_SECRET_KET=${JWT_SECRET_KEY}
     ports:
       - "8080:8080"
     depends_on:
-      - admin-service
-      - auth-service
+      - user-api
 
   frontend:
     build: ./frontend
