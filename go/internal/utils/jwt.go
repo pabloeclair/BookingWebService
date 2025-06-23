@@ -14,6 +14,8 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
+var ErrNotFoundSecretKey error = errors.New("отсутствует secret key")
+
 // Генерирует JWT-токен указанному пользователю
 func GenerateJWT(ctx context.Context, email string) (string, error) {
 	secretKey := []byte(os.Getenv("JWT_SECRET_KEY"))
@@ -53,7 +55,7 @@ func ParseJWT(tokenString string) (*models.UserClaim, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &models.UserClaim{}, func(t *jwt.Token) (interface{}, error) {
 		secretKey := []byte(os.Getenv("JWT_SECRET_KEY"))
 		if secretKey == nil {
-			return nil, errors.New("отсутствует secret key")
+			return nil, ErrNotFoundSecretKey
 		}
 		return secretKey, nil
 	})
