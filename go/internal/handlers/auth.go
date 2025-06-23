@@ -94,7 +94,7 @@ func SignupUser(w http.ResponseWriter, req *http.Request) {
 func LoginUser(w http.ResponseWriter, req *http.Request) {
 	// - Если пользователь с указанной почтой не найден, вернется ошибка NotFound.
 	// - Если пароль пользователя не совпал — Unauthorized.
-
+	//
 	// При любых других ошибках – InternalServer или log.Fatal, если отсутствует JWT_SECRET_KEY
 	// или указано не число в JWT_USER_DURATION.
 	// Показатель успеха — статус Created и JWT-токен в заголовке Authorization.

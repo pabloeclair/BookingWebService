@@ -22,12 +22,19 @@ func LoggingMiddleware(handler http.Handler) http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 
 		// проверка типа тела запроса
-		if r.Header.Get("Content-Type") == "" || r.Header.Get("Content-Type") != "application/json" {
+		if (r.URL.Path != "/api/v1/user" || r.Method != http.MethodGet) && (r.Header.Get("Content-Type") == "" || r.Header.Get("Content-Type") != "application/json") {
 			errDto := models.ExceptionDto{
 				StatusCode:   http.StatusBadRequest,
 				ErrorMessage: models.ErrBadContentType.Error(),
 			}
 			errDto.WriteException(w)
+			log.Printf(
+				"%s %s: %d - Bad Request: %s",
+				r.Method,
+				r.URL.Path,
+				errDto.StatusCode,
+				errDto.ErrorMessage,
+			)
 			return
 		}
 
@@ -59,7 +66,7 @@ func AuthMiddleware(handler http.Handler) http.Handler {
 		// получение jwt токена
 		tokenString := r.Header.Get("Authorization")
 		if tokenString == "" {
-			log.Printf("%s %s: %d - отсутствует JWT-токен", r.Method, r.URL.Path, http.StatusForbidden)
+			log.Printf("%s %s: %d - Unauthorized: отсутствует JWT-токен", r.Method, r.URL.Path, http.StatusForbidden)
 			errDto := models.ExceptionDto{
 				StatusCode:   http.StatusUnauthorized,
 				ErrorMessage: "отсутствует JWT-токен",
@@ -82,7 +89,7 @@ func AuthMiddleware(handler http.Handler) http.Handler {
 
 		// проверка корректности роли
 		if !slices.Contains(models.Role_array, claims.Role) {
-			log.Printf("%s %s: %d - отказано в доступе", r.Method, r.URL.Path, http.StatusForbidden)
+			log.Printf("%s %s: %d - Forbidden: отказано в доступе", r.Method, r.URL.Path, http.StatusForbidden)
 			errDto := models.ExceptionDto{
 				StatusCode:   http.StatusForbidden,
 				ErrorMessage: "отказано в доступе",

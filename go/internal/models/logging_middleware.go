@@ -28,6 +28,8 @@ func (lrw *loggingResponseWriter) WriteHeader(code int) {
 func (lrw *loggingResponseWriter) Write(b []byte) (int, error) {
 	var errDto ExceptionDto
 	JsonToStruct(&errDto, bytes.NewReader(b))
-	lrw.StatusMessage += ": " + errDto.ErrorMessage
+	if errDto.ErrorMessage != "" {
+		lrw.StatusMessage += ": " + errDto.ErrorMessage
+	}
 	return lrw.ResponseWriter.Write(b)
 }
