@@ -139,7 +139,7 @@ public class BookingServiceTest {
 
         // Action & Assert
         HttpStatusException e = assertThrows(HttpStatusException.class, () -> BookingService.validateTimesByOneDay(array, bookingStart, bookingEnd));
-        assertEquals(HttpStatus.BAD_REQUEST, e.getStatus());
+        assertEquals(HttpStatus.CONFLICT, e.getStatus());
         assertEquals(expectedError, e.getMessage());
     }
 
@@ -154,7 +154,7 @@ public class BookingServiceTest {
 
         // Action & Assert
         HttpStatusException e = assertThrows(HttpStatusException.class, () -> BookingService.validateTimesByOneDay(array, bookingStart, bookingEnd));
-        assertEquals(HttpStatus.BAD_REQUEST, e.getStatus());
+        assertEquals(HttpStatus.CONFLICT, e.getStatus());
         assertEquals(expectedError, e.getMessage());
     }
     
@@ -169,7 +169,7 @@ public class BookingServiceTest {
 
         // Action & Assert
         HttpStatusException e = assertThrows(HttpStatusException.class, () -> BookingService.validateTimesByOneDay(array, bookingStart, bookingEnd));
-        assertEquals(HttpStatus.BAD_REQUEST, e.getStatus());
+        assertEquals(HttpStatus.CONFLICT, e.getStatus());
         assertEquals(expectedError, e.getMessage());
     }
 
@@ -184,7 +184,7 @@ public class BookingServiceTest {
 
         // Action & Assert
         HttpStatusException e = assertThrows(HttpStatusException.class, () -> BookingService.validateTimesByOneDay(array, bookingStart, bookingEnd));
-        assertEquals(HttpStatus.BAD_REQUEST, e.getStatus());
+        assertEquals(HttpStatus.CONFLICT, e.getStatus());
         assertEquals(expectedError, e.getMessage());
     }
 }
