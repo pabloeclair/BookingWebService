@@ -2,10 +2,14 @@ package centraluniversity.app.booking.models.booking;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+
+import org.springframework.http.HttpStatus;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import centraluniversity.app.booking.models.rooms.RoomDbDto;
+import centraluniversity.app.booking.models.exception.HttpStatusException;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -19,6 +23,7 @@ import lombok.Setter;
 public class BookingCreateDto {
     
     @NotNull
+    @JsonProperty("user_id")
     private Integer userId;
     
     @NotNull
@@ -27,20 +32,30 @@ public class BookingCreateDto {
 
     @NotNull
     @JsonProperty("booking_date")
-    private LocalDate bookingDate;
+    private String bookingDate;
 
     @NotNull
     @JsonProperty("booking_start")
-    private LocalTime bookingStart;
+    private String bookingStart;
 
     @NotNull
     @JsonProperty("booking_end")
-    private LocalTime bookingEnd;
+    private String bookingEnd;
 
-    @NotNull
-    private RoomDbDto room;
+    public BookingDbDto parseToDb() throws HttpStatusException {
 
-    public BookingDbDto parseToDb()  {
-        return new BookingDbDto(roomId, userId, roomId, bookingDate, bookingStart, bookingEnd);
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        LocalDate parsedBookingDate;
+        LocalTime parsedBookingStart;
+        LocalTime parsedBookingEnd;
+        try {
+            parsedBookingDate = LocalDate.parse(bookingDate, dateFormatter);
+            parsedBookingStart = LocalTime.parse(bookingStart, timeFormatter);
+            parsedBookingEnd = LocalTime.parse(bookingEnd, timeFormatter);
+        } catch (DateTimeParseException e) {
+            throw new HttpStatusException(HttpStatus.BAD_REQUEST, "неверный формат даты или времени; актуальный формат даты - dd.MM.yyyy, формат времени - HH:mm:ss");
+        }
+        return new BookingDbDto(null, userId, roomId, parsedBookingDate, parsedBookingStart, parsedBookingEnd);
     }
 }
