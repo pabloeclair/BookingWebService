@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import centraluniversity.app.booking.models.booking.*;
 import centraluniversity.app.booking.models.exception.HttpStatusException;
-import centraluniversity.app.booking.models.rooms.Room;
 import centraluniversity.app.booking.repositories.BookingRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -23,32 +22,17 @@ public class BookingService {
 
     private final RoomService roomService;
     private final BookingRepository bookingRepository;
-
-    /**
-     * Получение информации о брони по его id.
-     * @param id
-     * @return полная информация о брони
-     * @throws HttpStatusException NOT_FOUND (бронь не найдена)
-     */
-    private Booking getBookingById(Integer id) throws HttpStatusException {
-        Optional<Booking> booking = bookingRepository.findById(id);
-        if (booking.isEmpty()) {
-            throw new HttpStatusException(HttpStatus.NOT_FOUND, String.format("Бронь с id = %d не существует", id));
-        }
-        return booking.get();
-    }
-
     /**
      * Сохранение новой брони пользователем или администратором.
      * @param booking - информация о брони
-     * @throws HttpStatusException BAD_REQUEST (время брони занято), NOT_FOUND (почта/ауд. не найдена)
+     * @throws HttpStatusException CONFLICT (время брони занято), BAD_REQUEST (время start и end брони некорректны), NOT_FOUND (ауд. не найдена)
      */
-    public void createBooking(Booking booking) throws HttpStatusException {
+    public void createBooking(BookingDbDto booking) throws HttpStatusException {
         
-        // Проверка существовании аудитории
+        // проверка существовании аудитории
         roomService.getRoomById(booking.getRoomId());
 
-        // Валидация времени и даты бронирования
+        // валидация времени и даты бронирования
         validateDateTime(booking.getBookingDate(), booking.getBookingStart(), booking.getBookingEnd());
         List<TimeBookingDto> bookingTimes = getTimesByDate(booking.getRoomId(), booking.getBookingDate()).getBookingTimes();
         validateTimesByOneDay(bookingTimes, booking.getBookingStart(), booking.getBookingEnd());
@@ -59,40 +43,49 @@ public class BookingService {
     /**
      * Получение всех-всех-всех броней администратором.
      * @return пустой список или список с полной информацией о всех бронях
-     * @throws HttpStatusException NOT_FOUND (почта не найдена), UNAUTHORIZED (пароль не совпадает), FORBIDDEN (доступ запрещен)
      */
-    public List<BookingDto> getAllBookings() throws HttpStatusException {
-        List<Booking> bookings = bookingRepository.findAll();
-        return parseToBookingDtoList(bookings);
+    public List<BookingDbDto> getAllBookings() {
+        return bookingRepository.findAll();
     }
 
-    // /**
-    //  * Получение пользователем всех собственных броней
-    //  * @param email
-    //  * @param password
-    //  * @return пустой список или список с полной информацией о всех бронях
-    //  * @throws HttpStatusException NOT_FOUND (почта не найдена), UNAUTHORIZED (пароль не совпадает)
-    //  */
-    // public List<BookingDto> getAllBookingsByUserId() throws HttpStatusException {
-    //     List<Booking> bookings = bookingRepository.findByUserId(user.getId());
-    //     return parseToBookingDtoList(bookings);
-    // }
+    /**
+     * Получение пользователем всех собственных броней
+     * @return пустой список или список с полной информацией о всех бронях
+     */
+    public List<BookingDbDto> getAllBookingsByUserId(Integer userId) {
+        return bookingRepository.findByUserId(userId);
+    }
+
+    /**
+     * Получение информации о брони по его id.
+     * @param id - id брони
+     * @return полная информация о брони
+     * @throws HttpStatusException NOT_FOUND (бронь не найдена)
+     */
+    public BookingDbDto getBookingById(Integer id) throws HttpStatusException {
+        Optional<BookingDbDto> booking = bookingRepository.findById(id);
+        if (booking.isEmpty()) {
+            throw new HttpStatusException(HttpStatus.NOT_FOUND, String.format("Бронь с id = %d не существует", id));
+        }
+        return booking.get();
+    }
 
     /**
      * Обновление информации о бронировании пользователем или администратором.
-     * @param id
+     * @param bookingId - id брони
      * @param booking - полная информация о брони
-     * @param isAdmin
-     * @throws HttpStatusException BAD_REQUEST (время брони занято), NOT_FOUND (почта/ауд. не найдена), UNAUTHORIZED (пароль не совпадает), FORBIDDEN (доступ запрещен)
+     * @param isAdmin - отправлено админом или нет
+     * @throws HttpStatusException CONFLICT (время брони занято), BAD_REQUEST (время start и end брони некорректны), NOT_FOUND (ауд./бронь не найдена), FORBIDDEN (при попытке изменять чужую запись не админом)
      */
-    public void updateBooking(Integer id, Booking booking, boolean isAdmin) throws HttpStatusException {
+    public void updateBooking(Integer bookingId, BookingDbDto booking) throws HttpStatusException {
         
-        // Проверка существовании аудитории
-        roomService.getRoomById(booking.getRoomId());
-        Booking bookingSql = getBookingById(id);
+        // проверка существовании аудитории
+        roomService.getRoomById(bookingId);
 
+        BookingDbDto bookingSql = getBookingById(bookingId);
         LocalTime oldBookingStart = bookingSql.getBookingStart();
 
+        // замена полей в брони
         if (booking.getBookingDate() != null) {
             bookingSql.setBookingDate(booking.getBookingDate());
         }
@@ -103,6 +96,7 @@ public class BookingService {
             bookingSql.setBookingEnd(booking.getBookingEnd());
         }
 
+        // валидация дат и времен
         validateDateTime(bookingSql.getBookingDate(), bookingSql.getBookingStart(), bookingSql.getBookingEnd());
         List<TimeBookingDto> bookingTimes = getTimesByDate(booking.getRoomId(), booking.getBookingDate()).getBookingTimes();
         for (int i = 0; i < bookingTimes.size(); i++) {
@@ -112,7 +106,6 @@ public class BookingService {
             }
         }
         validateTimesByOneDay(bookingTimes, oldBookingStart, oldBookingStart);
-        
 
         bookingRepository.save(bookingSql);
     } 
@@ -123,30 +116,6 @@ public class BookingService {
      */
     public void deleteBooking(Integer id) {
         bookingRepository.deleteById(id);
-    }
-
-    /**
-     * Преобразование List < Booking > в List < BookingDto >.
-     * @param bookings List < Booking >
-     * @return List < BookingDto >
-     */
-    public List<BookingDto> parseToBookingDtoList(List<Booking> bookings) {
-        List<BookingDto> result = new ArrayList<>();
-
-        for (int i = 0; i < bookings.size(); i++) {
-            Booking bookingNum = bookings.get(i);
-            Room room = roomService.getRoomById(bookingNum.getRoomId());
-            BookingDto bookingDto = new BookingDto(
-                bookingNum.getUserId(), 
-                bookingNum.getRoomId(), 
-                bookingNum.getBookingDate(), 
-                bookingNum.getBookingStart(), 
-                bookingNum.getBookingEnd(), 
-                room
-            );
-            result.add(bookingDto);
-        }
-        return result;
     }
 
     /**
@@ -173,7 +142,7 @@ public class BookingService {
      * @return
      */
     public DateBookingDto getTimesByDate(Integer roomId, LocalDate bookingDate) {
-        List<Booking> bookings = bookingRepository.findByRoomIdAndBookingDateOrderByBookingStart(roomId, bookingDate);
+        List<BookingDbDto> bookings = bookingRepository.findByRoomIdAndBookingDateOrderByBookingStart(roomId, bookingDate);
 
         List<TimeBookingDto> bookingTimes = new ArrayList<>();
         for (int i = 0; i < bookings.size(); i++) {
@@ -203,7 +172,7 @@ public class BookingService {
                     bookingEnd.isAfter(time.getBookingStart()) || bookingEnd.equals(time.getBookingStart()));
 
             if (startIsBad || endIsBad) {
-                throw new HttpStatusException(HttpStatus.BAD_REQUEST, String.format("Уже существует бронь с %s по %s", 
+                throw new HttpStatusException(HttpStatus.CONFLICT, String.format("Уже существует бронь с %s по %s", 
                     time.getBookingStart().format(timeFormatter), time.getBookingEnd().format(timeFormatter)));
             }
         }
