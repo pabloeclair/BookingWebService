@@ -1,13 +1,14 @@
 package centraluniversity.app.booking.models.rooms;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Entity 
 @Table(name = "rooms") 
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class Room {
 
     @Id
@@ -25,5 +26,11 @@ public class Room {
 
     @Column
     private String image;
+
+    Room(String name, String description, Integer size) {
+        this.name = name;
+        this.description = description;
+        this.size = size;
+    }
     
 }
