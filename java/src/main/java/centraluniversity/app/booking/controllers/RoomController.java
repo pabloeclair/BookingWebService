@@ -2,8 +2,6 @@ package centraluniversity.app.booking.controllers;
 
 import java.util.List;
 
-import javax.validation.Valid;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +14,7 @@ import centraluniversity.app.booking.services.AuthService;
 import centraluniversity.app.booking.services.RoomService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @Tag(name = "Room API", description = "API управления аудиториями для бронирования")
