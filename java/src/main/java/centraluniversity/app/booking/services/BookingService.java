@@ -112,9 +112,10 @@ public class BookingService {
 
     /**
      * Отмена бронирования пользователем или администратором.
-     * @param id
+     * @param id - id брони
      */
     public void deleteBooking(Integer id) {
+        getBookingById(id); // проверка существования
         bookingRepository.deleteById(id);
     }
 
