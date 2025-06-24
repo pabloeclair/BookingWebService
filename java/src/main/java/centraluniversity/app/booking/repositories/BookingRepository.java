@@ -5,11 +5,11 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import centraluniversity.app.booking.models.booking.Booking;
+import centraluniversity.app.booking.models.booking.BookingDbDto;
 
-public interface BookingRepository extends JpaRepository<Booking, Integer> {
-    List<Booking> findByUserId(Integer userId);
+public interface BookingRepository extends JpaRepository<BookingDbDto, Integer> {
+    List<BookingDbDto> findByUserId(Integer userId);
     void deleteByRoomId(Integer roomId);
     void deleteByUserId(Integer userId);
-    List<Booking> findByRoomIdAndBookingDateOrderByBookingStart(Integer roomId, LocalDate bookingDate);
+    List<BookingDbDto> findByRoomIdAndBookingDateOrderByBookingStart(Integer roomId, LocalDate bookingDate);
 }

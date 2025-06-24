@@ -7,7 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import centraluniversity.app.booking.models.exception.HttpStatusException;
-import centraluniversity.app.booking.models.rooms.Room;
+import centraluniversity.app.booking.models.rooms.RoomDbDto;
 import centraluniversity.app.booking.models.rooms.RoomCreateDto;
 import centraluniversity.app.booking.repositories.BookingRepository;
 import centraluniversity.app.booking.repositories.RoomRepository;
@@ -26,8 +26,8 @@ public class RoomService {
      * @return Room - подробная информация об аудитории
      * @throws HttpStatusException NOT_FOUND (не найдена аудитория)
      */
-    public Room getRoomById(Integer id) throws HttpStatusException {
-        Optional<Room> room = roomRepository.findById(id);
+    public RoomDbDto getRoomById(Integer id) throws HttpStatusException {
+        Optional<RoomDbDto> room = roomRepository.findById(id);
         if (room.isEmpty()) {
             throw new HttpStatusException(HttpStatus.NOT_FOUND, String.format("Аудитории с id = %d не существует", id));
         }
@@ -41,7 +41,7 @@ public class RoomService {
      */
     public void createRoom(RoomCreateDto room) throws HttpStatusException {
 
-        Optional<Room> existingRoom = roomRepository.findByName(room.getName());
+        Optional<RoomDbDto> existingRoom = roomRepository.findByName(room.getName());
         if (existingRoom.isPresent()) {
             throw new HttpStatusException(HttpStatus.CONFLICT, String.format("аудитория с названием '%s' уже существует", room.getName()));
         }
@@ -53,7 +53,7 @@ public class RoomService {
      * Получение информации обо всех аудиториях.
      * @return пустой список, если ничего не найдено, или список всех аудиторий с полной информацией о них
      */
-    public List<Room> getAllRooms() {
+    public List<RoomDbDto> getAllRooms() {
         return roomRepository.findAll();
     }
 
@@ -62,7 +62,7 @@ public class RoomService {
      * @param name - полное или частичное название аудитории
      * @return пустой список, если ничего не найдено, или список всех найденных аудиторий с полной информацией о них 
      */
-    public List<Room> getRoomByName(String name) {
+    public List<RoomDbDto> getRoomByName(String name) {
         return roomRepository.findByNameContaining(name);
     }
 
@@ -72,12 +72,12 @@ public class RoomService {
      * @param room - новая информация об аудитории
      * @throws HttpStatusException FORBIDDEN (отказано в доступе), CONFLICT (указанное название ауд. уже существует)
      */
-    public void updateRoom(Integer roomId, Room room) throws HttpStatusException {
+    public void updateRoom(Integer roomId, RoomDbDto room) throws HttpStatusException {
 
-        Room roomSql = getRoomById(roomId);
+        RoomDbDto roomSql = getRoomById(roomId);
         
         if (room.getName() != null) {
-            Optional<Room> existingRoom = roomRepository.findByName(room.getName());
+            Optional<RoomDbDto> existingRoom = roomRepository.findByName(room.getName());
             if (existingRoom.isPresent()) {
                 throw new HttpStatusException(HttpStatus.CONFLICT, String.format("Аудитория с названием '%s' уже существует", room.getName()));
             }

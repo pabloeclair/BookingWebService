@@ -25,8 +25,8 @@ public class RoomCreateDto {
 
     private String image;
 
-    public Room parseToDb() {
-        Room room = new Room(this.name, this.description, this.size);
+    public RoomDbDto parseToDb() {
+        RoomDbDto room = new RoomDbDto(this.name, this.description, this.size);
         if (this.image != null) {
             room.setImage(this.image);
         }
