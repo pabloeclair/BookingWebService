@@ -1,7 +1,8 @@
 package centraluniversity.app.booking.models.rooms;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,7 +12,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class RoomCreateDto extends Room {
+public class RoomCreateDto {
 
     @NotBlank
     private String name;
@@ -23,4 +24,12 @@ public class RoomCreateDto extends Room {
     private Integer size;
 
     private String image;
+
+    public Room parseToDb() {
+        Room room = new Room(this.name, this.description, this.size);
+        if (this.image != null) {
+            room.setImage(this.image);
+        }
+        return room;
+    }
 }

@@ -45,8 +45,8 @@ public class RoomService {
         if (existingRoom.isPresent()) {
             throw new HttpStatusException(HttpStatus.CONFLICT, String.format("аудитория с названием '%s' уже существует", room.getName()));
         }
-
-        roomRepository.save(room);
+        
+        roomRepository.save(room.parseToDb());
     }
 
     /**
