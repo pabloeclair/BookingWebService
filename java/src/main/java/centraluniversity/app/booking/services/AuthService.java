@@ -35,6 +35,7 @@ public class AuthService {
         }
     }
 
+    // todo: возвращает 500 вместо 401
     private UserDto handleResponse(HttpResponse<String> response) {
         if (response.statusCode() == 200) {
             try {
