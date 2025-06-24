@@ -113,8 +113,9 @@ public class BookingService {
     /**
      * Отмена бронирования пользователем или администратором.
      * @param id - id брони
+     * @throws HttpStatusException NOT_FOUND (бронь не найдена)
      */
-    public void deleteBooking(Integer id) {
+    public void deleteBooking(Integer id) throws HttpStatusException {
         getBookingById(id); // проверка существования
         bookingRepository.deleteById(id);
     }
@@ -161,8 +162,9 @@ public class BookingService {
      * @param times - список всех интервалов за день
      * @param bookingStart
      * @param bookingEnd
+     * @throws HttpStatusException CONFLICT (время брони занято)
      */
-    public static void validateTimesByOneDay(List<TimeBookingDto> times, LocalTime bookingStart, LocalTime bookingEnd) {
+    public static void validateTimesByOneDay(List<TimeBookingDto> times, LocalTime bookingStart, LocalTime bookingEnd) throws HttpStatusException {
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
         for (int i = 0; i < times.size(); i++) {
