@@ -21,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/admin/booking")
 @RequiredArgsConstructor
-public class AdminBookingController {
+public class BookingAdminController {
 
     private final BookingService bookingService;
     private final AuthService authService;
