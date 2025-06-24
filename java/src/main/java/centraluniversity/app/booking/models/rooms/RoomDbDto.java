@@ -9,7 +9,7 @@ import lombok.*;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class Room {
+public class RoomDbDto {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,7 +27,7 @@ public class Room {
     @Column
     private String image;
 
-    Room(String name, String description, Integer size) {
+    RoomDbDto(String name, String description, Integer size) {
         this.name = name;
         this.description = description;
         this.size = size;
