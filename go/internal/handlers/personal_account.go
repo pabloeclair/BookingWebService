@@ -16,6 +16,7 @@ func GetUserByJWT(w http.ResponseWriter, req *http.Request) {
 	// При любых других ошибках – InternalServer
 	// Показатель успеха – удачно переданный claim
 
+	// парсинг токена
 	tokenString := req.Header.Get("Authorization")
 	if tokenString == "" {
 		errDto := models.NewExceptionDto(
@@ -44,6 +45,31 @@ func GetUserByJWT(w http.ResponseWriter, req *http.Request) {
 		errDto := models.NewExceptionDto(
 			http.StatusInternalServerError,
 			err.Error(),
+		)
+		errDto.WriteException(w)
+		return
+	}
+
+	// сравнение с реальными данными
+	ctx := req.Context()
+	actualUser, err := db.GetUserById(ctx, token.Id)
+	if err != nil {
+		errDto := models.NewExceptionDto(
+			http.StatusInternalServerError,
+			err.Error(),
+		)
+		if errors.Is(err, db.ErrNotFound) {
+			errDto.StatusCode = http.StatusNotFound
+		}
+		errDto.WriteException(w)
+		return
+	}
+
+	isCorrect := actualUser.Id != token.Id || actualUser.Email != token.Email || actualUser.FirstName != token.FirstName || actualUser.SecondName != token.SecondName || actualUser.Patronymic != token.Patronymic || actualUser.Role != token.Role
+	if !isCorrect {
+		errDto := models.NewExceptionDto(
+			http.StatusUnauthorized,
+			"данные не совпадают с данными реального пользователя",
 		)
 		errDto.WriteException(w)
 		return
