@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import centraluniversity.app.booking.models.exception.HttpStatusException;
-import centraluniversity.app.booking.models.rooms.Room;
+import centraluniversity.app.booking.models.rooms.RoomDbDto;
 import centraluniversity.app.booking.models.rooms.RoomCreateDto;
 import centraluniversity.app.booking.models.user.Role;
 import centraluniversity.app.booking.models.user.UserDto;
@@ -39,7 +39,7 @@ public class RoomController {
 
     @Operation(summary = "Получение всех аудиторий по названию")
     @GetMapping("/rooms")
-    public List<Room> getRoomsByName(@RequestParam(value = "name", required = false) String partName) {
+    public List<RoomDbDto> getRoomsByName(@RequestParam(value = "name", required = false) String partName) {
         if (partName == null) {
             return roomService.getAllRooms();
         }
@@ -51,7 +51,7 @@ public class RoomController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void updateRoom(
             @PathVariable("id") Integer id, 
-            @RequestBody @Valid Room room,
+            @RequestBody @Valid RoomDbDto room,
             @RequestHeader("Authorization") String tokenString
     ) {
         auth(tokenString);
