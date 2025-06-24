@@ -12,7 +12,6 @@ import centraluniversity.app.booking.models.user.UserDto;
 import centraluniversity.app.booking.services.AuthService;
 import centraluniversity.app.booking.services.BookingService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,8 +31,7 @@ public class BookingUserController {
     public void createBooking(
             @RequestBody @Valid BookingCreateDto bookingDto,
             @RequestHeader("Authorization") String tokenString
-    ) throws Exception {
-
+    ) {
         UserDto user = authService.parseJwt(tokenString);
         if (!user.getId().equals(bookingDto.getUserId())) {
             throw new HttpStatusException(HttpStatus.FORBIDDEN, "бронировать разрешено только на себя");
@@ -43,7 +41,7 @@ public class BookingUserController {
 
     @Operation(summary = "Получение списка всех бронь пользователя")
     @GetMapping
-    public List<BookingDbDto> getBookings(@RequestHeader("Authorization") String tokenString) throws Exception {
+    public List<BookingDbDto> getBookings(@RequestHeader("Authorization") String tokenString) {
 
         return bookingService.getAllBookingsByUserId(authService.parseJwt(tokenString).getId());
     }
@@ -55,8 +53,7 @@ public class BookingUserController {
             @PathVariable("id") Integer bookingId, 
             @RequestBody @Valid BookingDbDto booking,
             @RequestHeader("Authorization") String tokenString
-    ) throws Exception {
-
+    ) {
         auth(tokenString, bookingId);
         bookingService.updateBooking(bookingId, booking);
     }
@@ -67,8 +64,7 @@ public class BookingUserController {
     public void deleteBooking(
             @PathVariable("id") Integer bookingId,
             @RequestHeader("Authorization") String tokenString
-    ) throws Exception {
-        
+    ) {
         auth(tokenString, bookingId);
         bookingService.deleteBooking(bookingId);
     }
