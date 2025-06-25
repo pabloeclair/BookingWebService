@@ -13,6 +13,7 @@ import (
 // Получение информации о пользователе по JWT
 func GetUserByJWT(w http.ResponseWriter, req *http.Request) {
 	// Если произошла любая ошибка с JWT – Unauthorized
+	// Если пользователь из JWT не найден – Not Found
 	// При любых других ошибках – InternalServer
 	// Показатель успеха – удачно переданный claim
 
