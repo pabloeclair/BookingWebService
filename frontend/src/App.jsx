@@ -1,11 +1,10 @@
 import './App.css'
 import AuthProvider from "./auth/AuthProvider.jsx";
 import {BrowserRouter, Route, Routes} from "react-router";
-import React from "react";
 import LoginPage from "./auth/LoginPage.jsx";
 import Navigation from "./Navigation.jsx"
 import SignupPage from './auth/SignupPage.jsx';
-import MainAdminPage from './admin/MainAdminPage.jsx';
+import MainAdminPage from './user/MainAdminPage.jsx';
 
 function App() {
     return (
