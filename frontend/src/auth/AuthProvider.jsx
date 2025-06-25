@@ -7,7 +7,10 @@ function AuthProvider({children}) {
     const login = (response) => setUser({
         email: response.email,
         first_name: response.first_name,
-        role: response.role
+        second_name: response.second_name,
+        patronymic: response.patronymic,
+        role: response.role,
+        key: response.key
     });
     const logout = () => setUser(null);
 
