@@ -1,7 +1,6 @@
 import './Auth.css'
 import {Link} from 'react-router';
 import {useState} from "react";
-import generateSHA256Hash from '../GenerateHash';
 
 function SignupPage() {
     const [error, setError] = useState(null);
@@ -17,7 +16,7 @@ function SignupPage() {
                 <br/><br/>
                 <SignupForm setUser={setUser} setError={setError}/>
             </div>
-            <div className={'modal error'}>{error}</div>
+            <div className={'modal error'}>Ошибка<br/>{error}</div>
             </>
         );
     }
@@ -62,17 +61,25 @@ function SignupForm({ setUser, setError }) {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        console.log('Регистрация:', form);
 
         try {
-            const hashPassword = await generateSHA256Hash(form.password);
-            const req = {
-                first_name: form.first_name,
-                second_name: form.second_name,
-                patronymic: form.patronymic,
-                email: form.email,
-                password: hashPassword,
-            };
+            const response = await fetch('http://localhost:7070/api/v1/signup', {
+                method: 'POST',
+                body: JSON.stringify(form),
+                headers: {
+                    'Content-Type': 'application/json; charset=utf-8',
+                },
+            });
+
+            if (!response.ok) {
+                let errorMessage;
+                if (response.status === 409) {
+                    errorMessage = 'Аккаунт с указанной почтой уже существует';
+                } else {
+                    errorMessage = 'Произошла серверная ошибка';
+                }
+                throw new Error(errorMessage);
+            }
 
             setForm(prevForm => ({
                 ...prevForm,
@@ -83,23 +90,6 @@ function SignupForm({ setUser, setError }) {
                 password: '',
             }))
 
-            const response = await fetch('http://localhost:8080/users', {
-                method: 'POST',
-                body: JSON.stringify(req),
-                headers: {
-                    'Content-Type': 'application/json; charset=UTF-8',
-                },
-            });
-
-            if (!response.ok) {
-                let errorMessage;
-                if (response.status === 400) {
-                    errorMessage = 'Аккаунт с указанной почтой уже существует';
-                } else {
-                    errorMessage = 'Произошла серверная ошибка';
-                }
-                throw new Error(errorMessage);
-            }
             setError(null);
             setUser(true)
         } catch (err) {

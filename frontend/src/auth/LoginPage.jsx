@@ -2,8 +2,7 @@ import './Auth.css'
 import {Link, useNavigate} from 'react-router';
 import {useContext, useState} from "react";
 import AuthContext from "./AuthContext.jsx";
-import generateSHA256Hash from '../GenerateHash';
-import MainAdminPage from "../admin/MainAdminPage.jsx";
+import MainAdminPage from "../user/MainAdminPage.jsx";
 
 function LoginPage() {
 
@@ -12,20 +11,18 @@ function LoginPage() {
     const navigate = useNavigate();
     const [error, setError] = useState(null);
 
-    if (user && user.role !== 'USER') {
+    if (user && (user.role === 'ADMIN' || user.role === 'MAIN_ADMIN')) {
         return <MainAdminPage/>;
     }
 
     if (user) {
+        console.log(user)
         return (
             <>
                 Привет user {user.first_name}<br/>
                 <button className={"form-button"} onClick={logout}>Выйти</button>
                 <br/>
-                <button className={"form-button"} onClick={() => {
-                    navigate("/signup")
-                }}>Тест
-                </button>
+                <button className={"form-button"} onClick={() => { navigate("/signup") }}>Тест</button>
             </>
         );
     }
@@ -53,7 +50,7 @@ function LoginPage() {
             <br/><br/>
             <LoginForm setError={setError}/>
         </div>
-        <div className={'modal error'}>{error}</div>
+        <div className={'modal error'}>Ошибка<br/>{error}</div>
         </>
     );
     
@@ -71,11 +68,26 @@ function LoginForm({ setError }) {
         event.preventDefault();
 
         try {
-            const hashPassword = await generateSHA256Hash(form.password);
-            const response = await fetch('http://localhost:8080/users?' + new URLSearchParams({
-                email: form.email,
-                key: hashPassword,
-            }).toString());
+            const responseLogin = await fetch('http://localhost:7070/api/v1/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                body: JSON.stringify(form)
+            });
+
+            if (!responseLogin.ok) {
+                let errorMessage;
+                switch(responseLogin.status) {
+                    case 404:
+                        errorMessage = "Почта не существует";
+                        break;
+                    case 401:
+                        errorMessage = "Пароль неверный";
+                        break;
+                    default:
+                        errorMessage = 'Произошла серверная ошибка';
+                }
+                throw new Error(errorMessage);
+            }
 
             setForm(prevForm => ({
                 ...prevForm,
@@ -83,21 +95,19 @@ function LoginForm({ setError }) {
                 password: '',
             }))
 
-            const data = await response.json();
-            if (!response.ok) {
-                let errorMessage;
-                switch(response.status) {
-                    case 404:
-                        errorMessage = 'Аккаунта с указанной почтой не существует';
-                        break;
-                    case 401:
-                        errorMessage = 'Неверный пароль';
-                        break;
-                    default:
-                        errorMessage = 'Произошла серверная ошибка';
-                }
-                throw new Error(errorMessage);
+            const token = responseLogin.headers.get('authorization');
+            const responseParseJWT = await fetch('http://localhost:7070/api/v1/user', {
+                method: 'GET',
+                headers: { 'Authorization': token }
+            });
+
+            if (!responseParseJWT.ok) {
+                throw new Error('Произошла серверная ошибка');
             }
+
+            let data = await responseParseJWT.json();
+            data.key = token;
+
             login(data);
             setError(null);
         } catch (err) {
