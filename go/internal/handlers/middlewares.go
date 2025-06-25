@@ -19,10 +19,10 @@ func LoggingMiddleware(handler http.Handler) http.Handler {
 	// случаях, Internal Server Error
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
 		// проверка типа тела запроса
-		if (r.URL.Path != "/api/v1/user" || r.Method != http.MethodGet) && (r.Header.Get("Content-Type") == "" || r.Header.Get("Content-Type") != "application/json") {
+		if (r.URL.Path != "/api/v1/user" || r.Method != http.MethodGet) && (r.Header.Get("Content-Type") == "" || r.Header.Get("Content-Type") != "application/json; charset=utf-8") {
 			errDto := models.ExceptionDto{
 				StatusCode:   http.StatusBadRequest,
 				ErrorMessage: models.ErrBadContentType.Error(),
@@ -99,5 +99,22 @@ func AuthMiddleware(handler http.Handler) http.Handler {
 		}
 
 		handler.ServeHTTP(w, r)
+	})
+}
+
+// Мидлвейр для возможности обращения к серверу со стороны фронтенда
+func СorsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Expose-Headers", "Authorization")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
 	})
 }
