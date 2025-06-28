@@ -30,11 +30,11 @@ public class BookingService {
     public void createBooking(BookingDbDto booking) throws HttpStatusException {
         
         // проверка существовании аудитории
-        roomService.getRoomById(booking.getRoomId());
+        roomService.getRoomById(booking.getRoom().getId());
 
         // валидация времени и даты бронирования
         validateDateTime(booking.getBookingDate(), booking.getBookingStart(), booking.getBookingEnd());
-        List<TimeBookingDto> bookingTimes = getTimesByDate(booking.getRoomId(), booking.getBookingDate()).getBookingTimes();
+        List<TimeBookingDto> bookingTimes = getTimesByDate(booking.getRoom().getId(), booking.getBookingDate()).getBookingTimes();
         validateTimesByOneDay(bookingTimes, booking.getBookingStart(), booking.getBookingEnd());
 
         bookingRepository.save(booking);
@@ -71,6 +71,15 @@ public class BookingService {
     }
 
     /**
+     * Получение информации об бронях конкретной аудитории
+     * @param id - id комнаты
+     * @return пустой список или список 
+     */
+    public List<BookingDbDto> getAllBookingsByRoomId(Integer id) {
+        return bookingRepository.findByRoomId(id);
+    }
+
+    /**
      * Обновление информации о бронировании пользователем или администратором.
      * @param bookingId - id брони
      * @param booking - полная информация о брони
@@ -98,7 +107,7 @@ public class BookingService {
 
         // валидация дат и времен
         validateDateTime(bookingSql.getBookingDate(), bookingSql.getBookingStart(), bookingSql.getBookingEnd());
-        List<TimeBookingDto> bookingTimes = getTimesByDate(booking.getRoomId(), booking.getBookingDate()).getBookingTimes();
+        List<TimeBookingDto> bookingTimes = getTimesByDate(booking.getRoom().getId(), booking.getBookingDate()).getBookingTimes();
         for (int i = 0; i < bookingTimes.size(); i++) {
             if (bookingTimes.get(i).getBookingStart().equals(oldBookingStart)) {
                 bookingTimes.remove(i);
