@@ -1,0 +1,56 @@
+#modal-personal-account {
+    position: relative;
+    top: 10%;
+    width: 70%;
+    min-width: 200px;
+    height: auto;
+    font-size: 13px;
+    text-align: left;
+    background: white;
+    border-radius: 20px;
+    border: 1px solid #d1d1d1;
+    margin-top: 20px;
+    padding: 30px 40px 10px 40px;
+    font-weight: 500;
+}
+
+.field-personal-account {
+    width: 100%;
+    height: 100px;
+    border-top: 1px solid #000; 
+    margin-top: 20px;
+}
+
+.main-cards {
+    margin-top: 20px;
+    margin-bottom: 50px;    
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 20px;
+    cursor: pointer;
+}
+
+.room-card {
+    border: 1px solid #d1d1d1;
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    width: 200px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+.room-card img {
+    max-width: 100%;
+    border-radius: 4px;
+}
+
+.room-card p {
+    margin-top: 1px;
+    font-size: 15px;
+}
+
+.room-card:hover {
+    background: rgba(237, 237, 237, 0.42);
+}
