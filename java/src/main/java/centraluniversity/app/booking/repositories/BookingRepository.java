@@ -12,4 +12,5 @@ public interface BookingRepository extends JpaRepository<BookingDbDto, Integer> 
     void deleteByRoomId(Integer roomId);
     void deleteByUserId(Integer userId);
     List<BookingDbDto> findByRoomIdAndBookingDateOrderByBookingStart(Integer roomId, LocalDate bookingDate);
+    List<BookingDbDto> findByRoomId(Integer roomId);
 }
