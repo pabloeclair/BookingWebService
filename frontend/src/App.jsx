@@ -2,9 +2,10 @@ import './App.css'
 import AuthProvider from "./auth/AuthProvider.jsx";
 import {BrowserRouter, Route, Routes} from "react-router";
 import LoginPage from "./auth/LoginPage.jsx";
-import Navigation from "./Navigation.jsx"
 import SignupPage from './auth/SignupPage.jsx';
-import MainAdminPage from './user/MainAdminPage.jsx';
+import {MainAdminPage, MainUserPage} from './user/MainPages.jsx';
+import ErrorNotFound from './ErrorNotFound.jsx';
+import { FreeBookings, PersonalAccount } from './user/UserPages.jsx';
 
 function App() {
     return (
@@ -16,7 +17,10 @@ function App() {
                     <Route path={"/login"} element={<LoginPage/>}/>
                     <Route path={"/signup"} element={<SignupPage/>}/>
                     <Route path={"/admin"} element={<MainAdminPage/>}/>
-                    <Route path={"*"} element={<Navigation/>}/>
+                    <Route path={"/"} element={<MainUserPage/>}/>
+                    <Route path={"/personal-account"} element={<PersonalAccount/>}/>
+                    <Route path={"/free-bookings"} element={<FreeBookings/>}/>
+                    <Route path={"*"} element={<ErrorNotFound/>}/>
                 </Routes>
             </AuthProvider>
         </BrowserRouter>
