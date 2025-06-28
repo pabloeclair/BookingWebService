@@ -6,29 +6,16 @@ stages:
 variables:
   GOCACHE: $CI_PROJECT_DIR/go/cache
 
-generate-protobuf:
-  stage: generate
-  image: namely/protoc-all:latest   
-  tags:
-    - students-buildkit-medium
-  script:
-    - protoc --go_out=./go/ --go-grpc_out=./go/ -I ./api auth.proto 
-  artifacts:
-    paths:
-      - go/internal/pb/
-
 go-build:
   stage: build
   image: golang:1.23.9
   tags:
     - students-buildkit-medium
-  dependencies:
-    - generate-protobuf 
   script:
     - go mod download
     - go mod tidy
     - mkdir -p $GOCACHE
-    - go build -o auth ./go/cmd/server
+    - go build -o server ./go/cmd/server
 
 java-build:
   stage: build
