@@ -51,6 +51,7 @@ function SignupPage() {
 
 function SignupForm({ setUser, setError }) {
 
+    const [isLoading, setIsLoading] = useState(false);
     const [form, setForm] = useState({
         first_name: '',
         second_name: '',
@@ -61,6 +62,7 @@ function SignupForm({ setUser, setError }) {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+        setIsLoading(true);
 
         try {
             const response = await fetch('http://localhost:7070/api/v1/signup', {
@@ -72,11 +74,13 @@ function SignupForm({ setUser, setError }) {
             });
 
             if (!response.ok) {
-                let errorMessage;
                 if (response.status === 409) {
-                    errorMessage = 'Аккаунт с указанной почтой уже существует';
+                    setError('Аккаунт с указанной почтой уже существует');
+                } else if (response.status === 400) {
+                    const data = await response.json()
+                    setError(data.error_message)
                 } else {
-                    errorMessage = 'Произошла серверная ошибка';
+                    setError('Произошла серверная ошибка');
                 }
                 throw new Error(errorMessage);
             }
@@ -93,8 +97,10 @@ function SignupForm({ setUser, setError }) {
             setError(null);
             setUser(true)
         } catch (err) {
-            setError(err.message);
+            setError('Произошла серверная ошибка');
             setUser(false);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -163,6 +169,7 @@ function SignupForm({ setUser, setError }) {
             </label>
             <br/>
             <button className={"form-button"} type={"submit"}>Войти</button>
+            {isLoading && <img src={'/ring-loader.svg'} alt={'Загрузка'} className="loader-ring"/>}
         </form>
     );
 }

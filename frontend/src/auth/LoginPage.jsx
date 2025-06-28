@@ -1,30 +1,18 @@
 import './Auth.css'
-import {Link, useNavigate} from 'react-router';
+import {Link} from 'react-router';
 import {useContext, useState} from "react";
 import AuthContext from "./AuthContext.jsx";
-import MainAdminPage from "../user/MainAdminPage.jsx";
+import {MainAdminPage, MainUserPage} from "../user/MainPages.jsx";
 
 function LoginPage() {
 
     const user = useContext(AuthContext).user;
-    const logout = useContext(AuthContext).logout;
-    const navigate = useNavigate();
     const [error, setError] = useState(null);
 
     if (user && (user.role === 'ADMIN' || user.role === 'MAIN_ADMIN')) {
         return <MainAdminPage/>;
-    }
-
-    if (user) {
-        console.log(user)
-        return (
-            <>
-                Привет user {user.first_name}<br/>
-                <button className={"form-button"} onClick={logout}>Выйти</button>
-                <br/>
-                <button className={"form-button"} onClick={() => { navigate("/signup") }}>Тест</button>
-            </>
-        );
+    } else if (user && (user.role === 'USER')) {
+        return <MainUserPage/>
     }
 
     if (!error) {
@@ -58,6 +46,7 @@ function LoginPage() {
 
 function LoginForm({ setError }) {
 
+    const [isLoading, setIsLoading] = useState(false);
     const [form, setForm] = useState({
         email: '',
         password: ''
@@ -66,6 +55,7 @@ function LoginForm({ setError }) {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+        setIsLoading(true);
 
         try {
             const responseLogin = await fetch('http://localhost:7070/api/v1/login', {
@@ -102,16 +92,21 @@ function LoginForm({ setError }) {
             });
 
             if (!responseParseJWT.ok) {
-                throw new Error('Произошла серверная ошибка');
+                if (responseParseJWT.status === 400) {
+                    setError(await responseParseJWT.json().error_message)
+                }
+                setError('Произошла серверная ошибка');
             }
 
-            let data = await responseParseJWT.json();
+            const data = await responseParseJWT.json();
             data.key = token;
 
             login(data);
             setError(null);
         } catch (err) {
-            setError(err.message);
+            setError('Произошла серверная ошибка');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -147,6 +142,7 @@ function LoginForm({ setError }) {
             </label>
             <br/>
             <button className={"form-button"} type={"submit"}>Войти</button>
+            {isLoading && <img src={'/ring-loader.svg'} alt={'Загрузка'} className="loader-ring"/>}
         </form>
     );
 }
