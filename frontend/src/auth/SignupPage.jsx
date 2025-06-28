@@ -1,4 +1,5 @@
-import './Auth.css'
+import '../App.css'
+import '../styles/Form.css'
 import {Link} from 'react-router';
 import {useState} from "react";
 
@@ -9,7 +10,7 @@ function SignupPage() {
     if (error) {
         return (
             <>
-            <div className={'form-container'}>
+            <div id={'form-container'}>
                 <h1>Регистрация</h1>
                 <span className={"text-gray"}>Уже есть аккаунт?</span>
                 <Link to={"../login"} className={"text-link"}>Войти</Link>
@@ -24,7 +25,7 @@ function SignupPage() {
     if (user) {
         return (
             <>
-            <div className={'form-container'}>
+            <div id={'form-container'}>
                 <h1>Регистрация</h1>
                 <span className={"text-gray"}>Уже есть аккаунт?</span>
                 <Link to={"../login"} className={"text-link"}>Войти</Link>

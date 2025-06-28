@@ -3,7 +3,7 @@ import AuthContext from "../auth/AuthContext";
 import LoginPage from "../auth/LoginPage";
 import { useNavigate } from "react-router";
 import "../App.css"
-import "./UserPages.css"
+import "../styles/UserPages.css"
 
 // todo: do update user form
 export function PersonalAccount() {
@@ -75,7 +75,7 @@ export function FreeBookings() {
 
             {error && <div className={'modal error'} style={{right: '0', left: '1px'}}>Ошибка<br/>{error}</div>}
             {isLoading && <img src={'/3-dots-loader.svg'} alt={'Загрузка'} className="dots-loader"/>}
-            <div className="main-cards">
+            <div id="main-cards">
                 {rooms && rooms.map((room) => (
                     <div key={room.id} className="room-card">
                         {room.image && <img src={room.image} alt={room.name} />}

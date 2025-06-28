@@ -1,4 +1,5 @@
 import "../App.css"
+import "../styles/Navigation.css"
 import {useNavigate} from "react-router";
 import {useContext} from "react";
 import AuthContext from "../auth/AuthContext.jsx";
@@ -20,7 +21,7 @@ export function MainAdminPage() {
         <div id={'main-container'}>
             <span className={'text-path'} onClick={() => navigate('/')}>Главная</span>
             <h1>Добро пожаловать,<br/>{user.first_name}</h1><br/>
-            <div className={'buttons-container'}>
+            <div id={'buttons-container'}>
                 <button onClick={() => navigate('/personal-account')} className={'main-cards button-navigate'}>👤 Личный кабинет</button>
                 <button onClick={() => navigate('/admin/users')} className={'main-cards button-navigate'}>👥 Пользователи</button>
                 <button onClick={() => navigate('/admin/places')} className={'main-cards button-navigate'}>🏢 Места бронирования</button>
@@ -46,7 +47,7 @@ export function MainUserPage() {
         <div id={'main-container'}>
             <span className={'text-path'}>Главная</span>
             <h1>Добро пожаловать,<br/>{user.first_name}</h1><br/>
-            <div className={'buttons-container'}>
+            <div id={'buttons-container'}>
                 <button onClick={() => navigate('/personal-account')} className={'main-cards button-navigate'}>👤 Личный кабинет</button>
                 <button onClick={() => navigate('/my-bookings')} className={'main-cards button-navigate'}>📅 Мои записи</button>
                 <button onClick={() => navigate('/free-bookings')} className={'main-cards button-navigate'}>🏢 Свободные аудитории</button>

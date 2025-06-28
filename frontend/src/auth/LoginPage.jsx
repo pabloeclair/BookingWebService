@@ -1,4 +1,5 @@
-import './Auth.css'
+import '../App.css'
+import '../styles/Form.css'
 import {Link} from 'react-router';
 import {useContext, useState} from "react";
 import AuthContext from "./AuthContext.jsx";
@@ -18,7 +19,7 @@ function LoginPage() {
     if (!error) {
         return (
         <>
-        <div className={'form-container'}>
+        <div id={'form-container'}>
             <h1>Авторизация</h1>
             <span className={"text-gray"}>Нет аккаунта?</span>
             <Link to={"../signup"} className={"text-link"}>Зарегистрироваться</Link>
@@ -31,7 +32,7 @@ function LoginPage() {
 
     return (
         <>
-        <div className={'form-container'}>
+        <div id={'form-container'}>
             <h1>Авторизация</h1>
             <span className={"text-gray"}>Нет аккаунта?</span>
             <Link to={"../signup"} className={"text-link"}>Зарегистрироваться</Link>

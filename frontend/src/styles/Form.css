@@ -1,15 +1,4 @@
-.text-gray {
-    color: #4d4d4d;
-    margin-right: 20px;
-}
-
-.text-link {
-    color: #3a64cc;
-    font-weight: 500;
-    text-decoration: none;
-}
-
-.form-container {
+#form-container {
     font-weight: 500;
     margin-left: 40px;
     position: absolute;
