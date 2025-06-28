@@ -7,7 +7,7 @@ import (
 
 var (
 	ErrBadContentType   error = errors.New("недопустимый тип тела запроса: принимается только 'application/json; charset=utf-8'")
-	ErrBadBody          error = errors.New("недопустимое тело запроса")
+	ErrBadBody          error = errors.New("недопустимое поле")
 	ErrPermissionDenied error = errors.New("доступ запрещен")
 )
 

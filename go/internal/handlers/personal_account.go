@@ -243,6 +243,7 @@ func UpdatePassword(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// todo: сделать обращение к java для удаления связанных записей
 // Удаление пользователя.
 func DeleteUser(w http.ResponseWriter, req *http.Request) {
 	// Позволяет удалить свой аккаунт, если пользователь не является главным

@@ -7,9 +7,11 @@ import java.time.format.DateTimeParseException;
 
 import org.springframework.http.HttpStatus;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import centraluniversity.app.booking.models.exception.HttpStatusException;
+import centraluniversity.app.booking.services.RoomService;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -42,6 +44,9 @@ public class BookingCreateDto {
     @JsonProperty("booking_end")
     private String bookingEnd;
 
+    @JsonIgnore
+    private RoomService roomService;
+
     public BookingDbDto parseToDb() throws HttpStatusException {
 
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
@@ -56,6 +61,6 @@ public class BookingCreateDto {
         } catch (DateTimeParseException e) {
             throw new HttpStatusException(HttpStatus.BAD_REQUEST, "неверный формат даты или времени; актуальный формат даты - dd.MM.yyyy, формат времени - HH:mm:ss");
         }
-        return new BookingDbDto(null, userId, roomId, parsedBookingDate, parsedBookingStart, parsedBookingEnd);
+        return new BookingDbDto(null, userId, roomService.getRoomById(roomId), parsedBookingDate, parsedBookingStart, parsedBookingEnd);
     }
 }

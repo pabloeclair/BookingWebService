@@ -53,16 +53,16 @@ type UserSignupRequest struct {
 // Проверка, что все поля заполнены корректно.
 func (u *UserSignupRequest) Validation() error {
 	if u.Email == "" || len(strings.Split(u.Email, " ")) > 1 {
-		return fmt.Errorf("%w: поле email должен быть не пустым и содержать лишь только адрес почты", ErrBadBody)
+		return fmt.Errorf("%w: поле email должен быть не пустым и не содержать пробелов", ErrBadBody)
 	}
 	if u.FirstName == "" || len(strings.Split(u.FirstName, " ")) > 1 {
-		return fmt.Errorf("%w: поле имени должно быть не пустым и содержать лишь только само имя", ErrBadBody)
+		return fmt.Errorf("%w: поле имени должно быть не пустым и содержать лишь только само имя без пробелов", ErrBadBody)
 	}
 	if u.SecondName == "" || len(strings.Split(u.SecondName, " ")) > 1 {
-		return fmt.Errorf("%w: поле фамилии должно быть не пустым и содержать лишь только саму фамилию", ErrBadBody)
+		return fmt.Errorf("%w: поле фамилии должно быть не пустым и содержать лишь только саму фамилию без пробелов", ErrBadBody)
 	}
 	if len(strings.Split(u.Patronymic, " ")) > 1 {
-		return fmt.Errorf("%w: поле отчества должно содержать лишь только само отчество, если оно имеется", ErrBadBody)
+		return fmt.Errorf("%w: поле отчества должно содержать лишь только само отчество без пробелов, если оно имеется", ErrBadBody)
 	}
 	if u.Password == "" {
 		return fmt.Errorf("%w: поле пароля должно быть не пустым", ErrBadBody)

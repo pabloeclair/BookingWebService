@@ -53,6 +53,7 @@ input:focus:invalid {
 }
 
 .form-button {
+    margin-top: 13px;
     background: #3f78ff;
     border-radius: 10px;
     color: white;
