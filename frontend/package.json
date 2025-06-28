@@ -11,7 +11,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@mui/x-date-pickers": "^8.6.0",
     "bcryptjs": "^3.0.2",
+    "dayjs": "^1.11.13",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router": "^7.6.0"
