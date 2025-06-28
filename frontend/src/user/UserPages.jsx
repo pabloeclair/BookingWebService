@@ -5,6 +5,12 @@ import { useNavigate, useParams } from "react-router";
 import "../App.css"
 import "../styles/UserPages.css"
 import ErrorNotFound from "../ErrorNotFound";
+import { MobileTimePicker } from '@mui/x-date-pickers/MobileTimePicker';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from "dayjs";
+import 'dayjs/locale/de';
 
 // todo: do update user form
 export function PersonalAccount() {
@@ -113,6 +119,10 @@ export function CreateBooking() {
     const [room, setRoom] = useState(null);
     const navigate = useNavigate();
     const user = useContext(AuthContext).user;
+    const today = dayjs();
+    const [dateBooking, setDateBooking] = useState(today);
+    const [timeStart, setTimeStart] = useState(today.add(1, 'hour'));
+    const [timeEnd, setTimeEnd] = useState(today.add(2, 'hour'));
 
     useEffect(() => {
         async function getRoomById() {
@@ -164,8 +174,31 @@ export function CreateBooking() {
                     {room && room.image && <img src={room.image} alt={room.name} className={'image-header'} />}
                     {room && !room.image && <img src={'/black-and-white-stripes.jpg'} className={'image-header'} />} 
                 </div>
-                <h1 style={{fontSize: '40px', marginTop: '40px'}}>Аудитория {room.name}</h1>
-                <p>{room.description}</p>
+                {room && <h1 style={{fontSize: '40px', marginTop: '40px'}}>Аудитория {room.name}</h1>}
+                {room && <p>{room.description}</p>}
+                <h1 style={{marginTop: '40px'}}>Форма бронирования</h1>
+                <br/>
+                <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="de">
+                    <DatePicker 
+                        label="Дата бронирования" 
+                        value={dateBooking}
+                        onChange={(newValue) => setDateBooking(newValue)}
+                        disablePast 
+                    /><br/><br/>
+                    <MobileTimePicker 
+                        label="Начало бронирования"
+                        value={timeStart}
+                        onChange={(newValue) => setTimeStart(newValue)}
+                        disablePast
+                    /><br/><br/>
+                    <MobileTimePicker 
+                        label="Конец бронирования"
+                        value={timeEnd}
+                        onChange={(newValue) => setTimeEnd(newValue)}
+                        disablePast
+                    /><br/><br/>
+                </LocalizationProvider>
+                <button className="form-button" style={{marginBottom: '50px'}}>Отправить</button>
             </div>  
         </div>
         </>
