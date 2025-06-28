@@ -46,6 +46,12 @@ public class RoomController {
         return roomService.getRoomByName(partName);
     }  
 
+    @Operation(summary = "Получение аудитории по id")
+    @GetMapping("/rooms/{id}")
+    public RoomDbDto getRoomById(@PathVariable("id") Integer id) {
+        return roomService.getRoomById(id);
+    }
+
     @Operation(summary = "Изменение данных об аудитории")
     @PutMapping("/admin/rooms/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
