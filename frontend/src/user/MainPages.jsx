@@ -50,7 +50,7 @@ export function MainUserPage() {
             <div id={'buttons-container'}>
                 <button onClick={() => navigate('/personal-account')} className={'main-cards button-navigate'}>👤 Личный кабинет</button>
                 <button onClick={() => navigate('/my-bookings')} className={'main-cards button-navigate'}>📅 Мои записи</button>
-                <button onClick={() => navigate('/free-bookings')} className={'main-cards button-navigate'}>🏢 Свободные аудитории</button>
+                <button onClick={() => navigate('/rooms')} className={'main-cards button-navigate'}>🏢 Свободные аудитории</button>
             </div>
         </div>
         </>
