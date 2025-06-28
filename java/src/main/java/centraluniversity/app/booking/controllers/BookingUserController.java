@@ -40,10 +40,17 @@ public class BookingUserController {
     }
 
     @Operation(summary = "Получение списка всех бронь пользователя")
-    @GetMapping
-    public List<BookingDbDto> getBookings(@RequestHeader("Authorization") String tokenString) {
+    @GetMapping("/user")
+    public List<BookingDbDto> getBookingsByUserId(@RequestHeader("Authorization") String tokenString) {
 
         return bookingService.getAllBookingsByUserId(authService.parseJwt(tokenString).getId());
+    }
+
+    @Operation(summary = "Получение списка всех бронь комнаты")
+    @GetMapping("/room/{id}")
+    public List<BookingDbDto> getBookingsByRoomId(@PathVariable("id") Integer roomId) {
+
+        return bookingService.getAllBookingsByRoomId(roomId);
     }
 
     @Operation(summary = "Обновление информации о брони")
