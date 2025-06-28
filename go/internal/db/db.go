@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"cu_coworking_book/go/internal/pb"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -124,7 +123,7 @@ func CreateUser(ctx context.Context, user *User) (uint32, error) {
 	// если пользователь первый, он обретает права MAIN_ADMIN
 	if err = db.GetContext(ctx, &id, `SELECT id FROM users LIMIT 1`); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			user.Role = pb.Role_MAIN_ADMIN.String()
+			user.Role = "MAIN_ADMIN"
 		} else {
 			return 0, fmt.Errorf("creating user: select error: %w", err)
 		}
@@ -198,33 +197,33 @@ func GetUserById(ctx context.Context, id uint32) (*User, error) {
 	return &res, nil
 }
 
-// Получение списка пользователей по ключу. Может вернуть ErrBadKey.
-//
-// Принимает контекст запроса, категорию сортировки и искомое значение.
-// При успехе возвращает указатель на список объектов пользователей или пустой список,
-// если ничего не найдено.
-func GetUserByKey(ctx context.Context, sortBy *pb.By, sortValue string) ([]*User, error) {
-	db, err := connectToDb()
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
+// // Получение списка пользователей по ключу. Может вернуть ErrBadKey.
+// //
+// // Принимает контекст запроса, категорию сортировки и искомое значение.
+// // При успехе возвращает указатель на список объектов пользователей или пустой список,
+// // если ничего не найдено.
+// func GetUserByKey(ctx context.Context, sortBy *pb.By, sortValue string) ([]*User, error) {
+// 	db, err := connectToDb()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer db.Close()
 
-	// todo: избавиться от sql инъекции
-	var res []*User
-	query := `SELECT * FROM users`
-	if sortBy != pb.By_NONE.Enum() {
-		query += " WHERE " + strings.ToLower(sortBy.String()) + " LIKE $1"
-	}
-	if err := db.SelectContext(ctx, &res, query, "%"+sortValue+"%"); err != nil {
-		return nil, fmt.Errorf("getting user by id: select error: %w", err)
-	}
+// 	// todo: избавиться от sql инъекции
+// 	var res []*User
+// 	query := `SELECT * FROM users`
+// 	if sortBy != pb.By_NONE.Enum() {
+// 		query += " WHERE " + strings.ToLower(sortBy.String()) + " LIKE $1"
+// 	}
+// 	if err := db.SelectContext(ctx, &res, query, "%"+sortValue+"%"); err != nil {
+// 		return nil, fmt.Errorf("getting user by id: select error: %w", err)
+// 	}
 
-	for _, u := range res {
-		u.finallyFieldsProcessing()
-	}
-	return res, nil
-}
+// 	for _, u := range res {
+// 		u.finallyFieldsProcessing()
+// 	}
+// 	return res, nil
+// }
 
 // Обновление информации о пользователе в базе данных. Может вернуть ErrConflict и ErrNotFound.
 //
