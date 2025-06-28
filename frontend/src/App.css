@@ -14,6 +14,8 @@ button {
 .modal {
     position: fixed;
     min-width: 120px;
+    max-width: 250px;
+    margin-top: 20px;
     width: auto;
     right: 40px;
     top: 30px;
@@ -51,6 +53,7 @@ button {
     flex-direction: column;
     justify-content: flex-start;
     align-items: flex-start;
+    cursor: pointer;
 }
 
 .button-navigate:hover {
@@ -69,4 +72,22 @@ button {
     color: #616161;
     font-size: 14px;
     margin-right: 15px;
+    cursor: pointer;
+}
+
+.loader-dots {
+    margin-top: 80px;
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%);
+    width: 40px;
+    height: 40px;
+}
+
+.loader-ring {
+    position: relative;
+    top: 13px;
+    margin-left: 20px;
+    width: 40px;
+    height: 40px;
 }
