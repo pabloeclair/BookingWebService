@@ -66,18 +66,17 @@ function LoginForm({ setError }) {
             });
 
             if (!responseLogin.ok) {
-                let errorMessage;
                 switch(responseLogin.status) {
                     case 404:
-                        errorMessage = "Почта не существует";
-                        break;
+                        setError("Почта не существует");
+                        return;
                     case 401:
-                        errorMessage = "Пароль неверный";
-                        break;
+                        setError("Пароль неверный");
+                        return;
                     default:
-                        errorMessage = 'Произошла серверная ошибка';
+                        setError('Произошла серверная ошибка');
+                        return;
                 }
-                throw new Error(errorMessage);
             }
 
             setForm(prevForm => ({

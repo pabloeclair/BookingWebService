@@ -39,7 +39,7 @@ function SignupPage() {
 
     return (
         <>
-        <div className={'form-container'}>
+        <div id={'form-container'}>
             <h1>Регистрация</h1>
             <span className={"text-gray"}>Уже есть аккаунт?</span>
             <Link to={"../login"} className={"text-link"}>Войти</Link>
@@ -77,13 +77,18 @@ function SignupForm({ setUser, setError }) {
             if (!response.ok) {
                 if (response.status === 409) {
                     setError('Аккаунт с указанной почтой уже существует');
+                    setUser(false);
+                    return;
                 } else if (response.status === 400) {
                     const data = await response.json()
                     setError(data.error_message)
+                    setUser(false);
+                    return;
                 } else {
                     setError('Произошла серверная ошибка');
+                    setUser(false);
+                    return;
                 }
-                throw new Error(errorMessage);
             }
 
             setForm(prevForm => ({
