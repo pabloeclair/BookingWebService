@@ -57,7 +57,7 @@ public class RoomController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void updateRoom(
             @PathVariable("id") Integer id, 
-            @RequestBody @Valid RoomDbDto room,
+            @RequestBody RoomDbDto room,
             @RequestHeader("Authorization") String tokenString
     ) {
         auth(tokenString);

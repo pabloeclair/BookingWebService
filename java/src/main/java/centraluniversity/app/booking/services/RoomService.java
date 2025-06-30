@@ -93,7 +93,7 @@ public class RoomService {
         }
 
         if (room.getImage() != null) {
-            room.setImage(room.getImage());
+            roomSql.setImage(room.getImage());
         }
 
         roomRepository.save(roomSql);
