@@ -21,6 +21,7 @@ public class AuthService {
     private String url = "http://user-api:7070/api/v1/user";
 
     public UserDto parseJwt(String tokenString) {
+        HttpResponse<String> response;
         try {
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
@@ -28,14 +29,13 @@ public class AuthService {
                     .header("Authorization", tokenString)
                     .GET()
                     .build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            return handleResponse(response);
+            response = client.send(request, HttpResponse.BodyHandlers.ofString());
         } catch (Exception e) {
             throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         }
+        return handleResponse(response);
     }
 
-    // todo: возвращает 500 вместо 401
     private UserDto handleResponse(HttpResponse<String> response) {
         if (response.statusCode() == 200) {
             try {
@@ -45,13 +45,14 @@ public class AuthService {
                 throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "ошибка парсинга ответа: " + e.getMessage());
             }
         } else {
+            ErrorDto errorDto;
             try {
                 ObjectMapper objectMapper = new ObjectMapper();
-                ErrorDto errorDto = objectMapper.readValue(response.body(), ErrorDto.class);
-                throw new HttpStatusException(HttpStatus.valueOf(response.statusCode()), errorDto.getErrorMessage());
+                errorDto = objectMapper.readValue(response.body(), ErrorDto.class);
             } catch (Exception e) {
                 throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "ошибка парсинга ошибки: " + e.getMessage());
             }
+            throw new HttpStatusException(HttpStatus.valueOf(response.statusCode()), errorDto.getErrorMessage());
         }
     }
     
