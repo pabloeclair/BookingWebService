@@ -8,10 +8,10 @@ import org.springframework.web.bind.annotation.*;
 import centraluniversity.app.booking.models.booking.BookingCreateDto;
 import centraluniversity.app.booking.models.booking.BookingDbDto;
 import centraluniversity.app.booking.models.exception.HttpStatusException;
+import centraluniversity.app.booking.models.rooms.RoomDbDto;
 import centraluniversity.app.booking.models.user.Role;
 import centraluniversity.app.booking.models.user.UserDto;
-import centraluniversity.app.booking.services.AuthService;
-import centraluniversity.app.booking.services.BookingService;
+import centraluniversity.app.booking.services.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class BookingAdminController {
 
     private final BookingService bookingService;
+    private final RoomService roomService;
     private final AuthService authService;
     
     @Operation(summary = "Создание новой брони")
@@ -34,7 +35,8 @@ public class BookingAdminController {
             @RequestHeader("Authorization") String tokenString
     ) {
         auth(tokenString);
-        bookingService.createBooking(bookingDto.parseToDb());
+        RoomDbDto room = roomService.getRoomById(bookingDto.getRoomId());
+        bookingService.createBooking(bookingDto.parseToDb(room));
     }
 
     @Operation(summary = "Получение всех доступных броней")

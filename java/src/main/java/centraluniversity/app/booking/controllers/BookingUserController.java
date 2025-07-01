@@ -8,9 +8,11 @@ import org.springframework.web.bind.annotation.*;
 import centraluniversity.app.booking.models.booking.BookingCreateDto;
 import centraluniversity.app.booking.models.booking.BookingDbDto;
 import centraluniversity.app.booking.models.exception.HttpStatusException;
+import centraluniversity.app.booking.models.rooms.RoomDbDto;
 import centraluniversity.app.booking.models.user.UserDto;
 import centraluniversity.app.booking.services.AuthService;
 import centraluniversity.app.booking.services.BookingService;
+import centraluniversity.app.booking.services.RoomService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -23,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 public class BookingUserController {
 
     private final BookingService bookingService;
+    private final RoomService roomService;
     private final AuthService authService;
     
     @Operation(summary = "Создание новой брони")
@@ -36,7 +39,8 @@ public class BookingUserController {
         if (!user.getId().equals(bookingDto.getUserId())) {
             throw new HttpStatusException(HttpStatus.FORBIDDEN, "бронировать разрешено только на себя");
         }
-        bookingService.createBooking(bookingDto.parseToDb());
+        RoomDbDto room = roomService.getRoomById(bookingDto.getRoomId());
+        bookingService.createBooking(bookingDto.parseToDb(room));
     }
 
     @Operation(summary = "Получение списка всех бронь пользователя")
