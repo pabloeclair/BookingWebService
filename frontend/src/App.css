@@ -2,6 +2,22 @@ body {
     font: 18px "Inter";
 }
 
+table {
+    width: 100%;
+    margin-top: 50px;
+    margin-bottom: 50px;
+    border-collapse: collapse;
+    font-family: sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+}
+
+th,
+td {
+    border-top: 1px solid rgb(160 160 160);
+    padding: 8px 10px;
+}
+
 button {
     font: 18px "Inter";
 }
@@ -76,3 +92,20 @@ button {
     width: 40px;
     height: 40px;
 }
+
+.cancel-button {
+    width: 30px; 
+    height: 30px; 
+    background-color: #ffb3be; 
+    border: none; 
+    border-radius: 8px; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    cursor: pointer; 
+}
+
+.cancel-button:hover {
+    background-color: pink;
+}
+
