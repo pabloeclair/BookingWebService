@@ -5,6 +5,7 @@ function AuthProvider({children}) {
     const [user, setUser] = useState(null);
 
     const login = (response) => setUser({
+        id: response.id,
         email: response.email,
         first_name: response.first_name,
         second_name: response.second_name,
