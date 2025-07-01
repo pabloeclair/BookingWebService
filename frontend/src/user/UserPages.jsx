@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import AuthContext from "../auth/AuthContext";
 import LoginPage from "../auth/LoginPage";
-import { useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import "../App.css"
 import "../styles/UserPages.css"
 import ErrorNotFound from "../ErrorNotFound";
@@ -122,6 +122,7 @@ export function CreateBooking() {
     const [isFormSending, setIsFormSending] = useState(false);
 
     const [error, setError] = useState(null);
+    const [ok, setOk] = useState(false);
     const [room, setRoom] = useState(null);
     const [roomBookings, setRoomBookings] = useState([]);
 
@@ -168,17 +169,23 @@ export function CreateBooking() {
     
     const handleSubmit = async (event) => {
         event.preventDefault();
+        
+        if (errorDateBooking || errorTimeStart || errorTimeEnd) {
+            setError('Не все поля заполнены корректно');
+            return;
+        }
+
         setIsFormSending(true);
         try {
             const response = await fetch('http://localhost:8080/api/v1/bookings', {
                 method: 'POST',
-                body: {
+                body: JSON.stringify({
                     'room_id': roomId,
                     'user_id': user.id,
                     'booking_date': dateBooking.format('DD.MM.YYYY'),
                     'booking_start': timeStart.format('HH:mm:ss'),
                     'booking_end': timeEnd.format('HH:mm:ss')
-                },
+                }),
                 headers: {
                     'Authorization': user.key,
                     'Content-Type': 'application/json; charset=utf-8'
@@ -187,25 +194,19 @@ export function CreateBooking() {
 
             if (!response.ok) {
                 const data = await response.json();
-                switch (response.status) {
-                    case 400:
-                        setError(data.error_message);
-                        return;
-                    case 403:
-                        setError(data.error_message);
-                        return;
-                    case 401:
-                        setError(
-                            <>Ваша сессия истекла. Пожалуйста, 
-                            <Link to={"../login"} className={"text-link"}>авторизуйтесь</Link>
-                            заново.</>
-                        );
-                        return;
-                    default:
-                        setError('Произошла серверная ошибка');
-                        return;
+                const errorCodes = [400, 403, 409];
+                if (errorCodes.includes(response.status)) {
+                    setError(data.error_message);
+                    return;
                 }
+                if (response.status === 401) {
+                    setError(401);
+                    return;
+                }
+                setError('Произошла серверная ошибка');
+                return;
             }
+            setOk(true);
         } catch (err) {
             setError('Произошла серверная ошибка');
         } finally {
@@ -271,20 +272,24 @@ export function CreateBooking() {
     return ( 
         <>
         <button className={"form-button"} onClick={logout} style={{right: '20px', top:'20px', position: 'absolute'}}>Выйти</button>
+        {error && error !== 401 && <div className={'modal error'}>Ошибка<br/>{error}</div>}
+        {error === 401 && <div className={'modal error'}>
+            Ваша сессия истекла<br/>Пожалуйста, <span onClick={handleLogout} className={"text-link"}>авторизуйтесь</span> заново</div>}
+        {ok && <div className={'modal ok'}>Аудитория успешна забронирована<br/>
+            Посмотреть в <Link className={'text-link'} to={'../my-bookings'} >личном списке бронирований</Link>?</div>}
         <div id="main-container">
             <span className={'text-path'} onClick={() => navigate('/')}>Главная</span> 
             <span className={'text-path'}>/</span> 
             <span className={'text-path'} onClick={() => navigate('/rooms')}>Свободные аудитории</span>
             <span className={'text-path'}>/</span> 
             {room && <span className={'text-path'} onClick={() => navigate('/rooms/'+room.id)}>{room.name}</span>}
-            {error && <div className={'modal error'} style={{right: '0', left: '1px'}}>Ошибка<br/>{error}</div>}
             <div id={'big-modal'}>
                 <div className={'image-header-container'}>
                     {room && room.image && <img src={room.image} alt={room.name} className={'image-header'} />}
                     {room && !room.image && <img src={'/black-and-white-stripes.jpg'} className={'image-header'} />} 
                 </div>
                 {room && <h1 style={{fontSize: '40px', marginTop: '40px'}}>Аудитория {room.name}</h1>}
-                {room && <p>{room.description}</p>}
+                {room && <><p>{room.description}</p><p>Вместимость — {room.size}</p></>}
                 <h1 style={{marginTop: '40px'}}>Форма бронирования</h1>
                 <br/>
                 <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="de">
@@ -329,7 +334,7 @@ export function CreateBooking() {
                         sx={{ width: '60%' }} 
                     /><br/><br/>
                 </LocalizationProvider>
-                <button className="form-button" style={{marginBottom: '50px'}} onSubmit={handleSubmit}>Отправить</button>
+                <button className="form-button" style={{marginBottom: '50px'}} onClick={handleSubmit}>Отправить</button>
                 {isFormSending && <img src={'/ring-loader.svg'} alt={'Загрузка'} className="loader-ring"/>}
             </div>  
         </div>
@@ -337,8 +342,11 @@ export function CreateBooking() {
     );
 }
 
-function isOverlap(start1, end1, start2, end2) {
-    return start1.isBefore(end2) && start2.isBefore(end1);
+function isOverlap(timeStart, timeEnd, existingStart, existingEnd) {
+    const startIsBad = (timeStart >= existingStart && timeStart <= existingEnd);
+    const endIsBad = (timeEnd <= existingEnd && timeEnd >= existingStart);
+    const startAndEndAreBad = (timeStart <= existingStart && timeEnd >= existingEnd);
+    return (startIsBad || endIsBad || startAndEndAreBad);
 }
 
 function validateDateBooking(dateBooking, today) {
@@ -377,11 +385,14 @@ function validateTimeStart(timeStart, timeEnd, dateBooking, today, roomBookings)
         return {isValid: false, error: 'Время начала должно быть раньше времени окончания'};
     }
 
+    console.log(roomBookings)
     // пересечения с существующими бронированиями
     for (const booking of roomBookings) {
         if (dayjs(booking.booking_date).isSame(dateBooking, 'day')) {
-            const existingStart = dayjs(booking.booking_start);
-            const existingEnd = dayjs(booking.booking_end);
+            const existingStart = dayjs(booking.booking_start, 'HH:mm:ss');
+            const existingEnd = dayjs(booking.booking_end, 'HH:mm:ss');
+
+            console.log(existingStart)
 
             if (isOverlap(timeStart, timeEnd, existingStart, existingEnd)) {
                 return {isValid: false, error: 'Время начала пересекается с существующим бронированием: ' + existingStart.format('HH:mm') + ' - ' + existingEnd.format('HH:mm')};
@@ -392,7 +403,7 @@ function validateTimeStart(timeStart, timeEnd, dateBooking, today, roomBookings)
     return {isValid: true, error: ''};
 }
 
-function validateTimeEnd(timeStart, timeEnd, dateBooking, roomBookings, today) {
+function validateTimeEnd(timeStart, timeEnd, dateBooking, today, roomBookings) {
     if (!timeEnd) {
         return {isValid: false, error: 'Данное поле обязательно'};
     }
@@ -419,8 +430,8 @@ function validateTimeEnd(timeStart, timeEnd, dateBooking, roomBookings, today) {
     // пересечения с существующими бронированиями
     for (const booking of roomBookings) {
         if (dayjs(booking.booking_date).isSame(dateBooking, 'day')) {
-            const existingStart = dayjs(booking.booking_start);
-            const existingEnd = dayjs(booking.booking_end);
+            const existingStart = dayjs(booking.booking_start, 'HH:mm:ss');
+            const existingEnd = dayjs(booking.booking_end, 'HH:mm:ss');
 
             if (isOverlap(timeStart, timeEnd, existingStart, existingEnd)) {
                 return {isValid: false, error: 'Время окончания пересекается с существующим бронированием: ' + existingStart.format('HH:mm') + ' - ' + existingEnd.format('HH:mm')};
@@ -432,5 +443,30 @@ function validateTimeEnd(timeStart, timeEnd, dateBooking, roomBookings, today) {
 }
 
 export function MyBookings() {
+    const user = useContext(AuthContext).user;
+    const logout = useContext(AuthContext).logout;
+    const navigate = useNavigate();
+
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        async function getMyBookings() {
+            try {
+                const response = await fetch('http://localhost:8080/api/v1/bookings/user', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': user.key
+                    }
+                })
+
+                if (!response.ok) {
+
+                }
+            } catch (err) {
+
+            }
+        }
+        getMyBookings();
+    }, []);
 
 }
