@@ -458,7 +458,6 @@ export function MyBookings() {
     const navigate = useNavigate();
 
     const [error, setError] = useState(null);
-    const [isDeleted, setIdDeleted] = useState(false);
 
     const [isLoadingBookings, setIsLoadingBookings] = useState(true);
     const [bookings, setBookings] = useState([]);
@@ -513,18 +512,14 @@ export function MyBookings() {
             if (!response.ok) {
                 if (response.status === 401) {
                     setError(401);
-                    setIdDeleted(false);
                     return;
                 }
                 setError('Произошла системная ошибка');
-                setIdDeleted(false);
                 return;
             }
-            setIdDeleted(true);
             setBookings(bookings.filter(book => book.id !== id));
         } catch (err) {
             setError('Произошла системная ошибка');
-            setIdDeleted(false);
         } 
     }
 
