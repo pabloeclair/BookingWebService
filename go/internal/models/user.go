@@ -122,10 +122,14 @@ func (u *UserUpdateRequest) Validation() error {
 
 // Модель обновления пароля пользователя
 type UserUpdatePasswordRequest struct {
+	OldPassword string `json:"old_password"`
 	NewPassword string `json:"new_password"`
 }
 
 func (u *UserUpdatePasswordRequest) Validation() error {
+	if u.OldPassword == "" {
+		return fmt.Errorf("%w: поле старого пароля обязательно", ErrBadBody)
+	}
 	if u.NewPassword == "" {
 		return fmt.Errorf("%w: поле нового пароля обязательно", ErrBadBody)
 	}
