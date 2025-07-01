@@ -5,7 +5,7 @@ import LoginPage from "./auth/LoginPage.jsx";
 import SignupPage from './auth/SignupPage.jsx';
 import {MainAdminPage, MainUserPage} from './user/MainPages.jsx';
 import ErrorNotFound from './ErrorNotFound.jsx';
-import { AllRooms, CreateBooking, PersonalAccount } from './user/UserPages.jsx';
+import { AllRooms, CreateBooking, MyBookings, PersonalAccount } from './user/UserPages.jsx';
 
 function App() {
     return (
@@ -20,7 +20,8 @@ function App() {
                     <Route path={"/"} element={<MainUserPage/>}/>
                     <Route path={"/personal-account"} element={<PersonalAccount/>}/>
                     <Route path={"/rooms"} element={<AllRooms/>}/>
-                    <Route path={"/rooms/:id"} element={<CreateBooking/>} />
+                    <Route path={"/rooms/:id"} element={<CreateBooking/>}/>
+                    <Route path={"/my-bookings"} element={<MyBookings/>}/>
                     <Route path={"*"} element={<ErrorNotFound/>}/>
                 </Routes>
             </AuthProvider>
