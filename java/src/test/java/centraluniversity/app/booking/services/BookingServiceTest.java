@@ -187,4 +187,19 @@ public class BookingServiceTest {
         assertEquals(HttpStatus.CONFLICT, e.getStatus());
         assertEquals(expectedError, e.getMessage());
     }
+
+    @Test 
+    public void testValidateTimesByOneDay_IncorrectRequest_IllegalStartAndEndTime() {
+
+        // Array
+        List<TimeBookingDto> array = generateSampleTimeBookings();
+        LocalTime bookingStart = LocalTime.of(8, 20);
+        LocalTime bookingEnd = LocalTime.of(10, 40);
+        String expectedError = "Уже существует бронь с 09:30:00 по 10:30:00";
+
+        // Action & Assert
+        HttpStatusException e = assertThrows(HttpStatusException.class, () -> BookingService.validateTimesByOneDay(array, bookingStart, bookingEnd));
+        assertEquals(HttpStatus.CONFLICT, e.getStatus());
+        assertEquals(expectedError, e.getMessage());
+    }
 }
