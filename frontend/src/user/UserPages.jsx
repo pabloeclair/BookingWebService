@@ -11,6 +11,8 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from "dayjs";
 import 'dayjs/locale/de';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+dayjs.extend(customParseFormat);
 
 // todo: do update user form
 export function PersonalAccount() {
@@ -183,8 +185,8 @@ export function CreateBooking() {
                     'room_id': roomId,
                     'user_id': user.id,
                     'booking_date': dateBooking.format('DD.MM.YYYY'),
-                    'booking_start': timeStart.format('HH:mm:ss'),
-                    'booking_end': timeEnd.format('HH:mm:ss')
+                    'booking_start': timeStart.second(0).format('HH:mm:ss'),
+                    'booking_end': timeEnd.second(0).format('HH:mm:ss')
                 }),
                 headers: {
                     'Authorization': user.key,
@@ -206,6 +208,7 @@ export function CreateBooking() {
                 setError('Произошла серверная ошибка');
                 return;
             }
+            setError(null);
             setOk(true);
         } catch (err) {
             setError('Произошла серверная ошибка');
@@ -269,20 +272,28 @@ export function CreateBooking() {
         }
     }
 
+    const handleLogout = () => {
+        setError(null);
+        logout();
+    }
+
     return ( 
         <>
         <button className={"form-button"} onClick={logout} style={{right: '20px', top:'20px', position: 'absolute'}}>Выйти</button>
+
         {error && error !== 401 && <div className={'modal error'}>Ошибка<br/>{error}</div>}
         {error === 401 && <div className={'modal error'}>
             Ваша сессия истекла<br/>Пожалуйста, <span onClick={handleLogout} className={"text-link"}>авторизуйтесь</span> заново</div>}
         {ok && <div className={'modal ok'}>Аудитория успешна забронирована<br/>
             Посмотреть в <Link className={'text-link'} to={'../my-bookings'} >личном списке бронирований</Link>?</div>}
+
         <div id="main-container">
             <span className={'text-path'} onClick={() => navigate('/')}>Главная</span> 
             <span className={'text-path'}>/</span> 
             <span className={'text-path'} onClick={() => navigate('/rooms')}>Свободные аудитории</span>
             <span className={'text-path'}>/</span> 
             {room && <span className={'text-path'} onClick={() => navigate('/rooms/'+room.id)}>{room.name}</span>}
+
             <div id={'big-modal'}>
                 <div className={'image-header-container'}>
                     {room && room.image && <img src={room.image} alt={room.name} className={'image-header'} />}
@@ -385,7 +396,6 @@ function validateTimeStart(timeStart, timeEnd, dateBooking, today, roomBookings)
         return {isValid: false, error: 'Время начала должно быть раньше времени окончания'};
     }
 
-    console.log(roomBookings)
     // пересечения с существующими бронированиями
     for (const booking of roomBookings) {
         if (dayjs(booking.booking_date).isSame(dateBooking, 'day')) {
@@ -448,8 +458,14 @@ export function MyBookings() {
     const navigate = useNavigate();
 
     const [error, setError] = useState(null);
+    const [isDeleted, setIdDeleted] = useState(false);
+
+    const [isLoadingBookings, setIsLoadingBookings] = useState(true);
+    const [bookings, setBookings] = useState([]);
 
     useEffect(() => {
+        if (!user) return;
+
         async function getMyBookings() {
             try {
                 const response = await fetch('http://localhost:8080/api/v1/bookings/user', {
@@ -460,13 +476,106 @@ export function MyBookings() {
                 })
 
                 if (!response.ok) {
-
+                    if (response.status === 401) {
+                        setError(401);
+                        return;
+                    }
+                    setError('Произошла системная ошибка');
+                    return;
                 }
+                
+                setBookings(await response.json());
             } catch (err) {
-
+                setError('Произошла системная ошибка');
+            } finally {
+                setIsLoadingBookings(false);
             }
         }
         getMyBookings();
-    }, []);
+    }, [user]);
+
+    if (!user) {
+        return <LoginPage />;
+    }
+
+    const handleLogout = () => {
+        setError(null);
+        logout();
+    }
+
+    const handleCancel = async (id) => {
+        try {
+            const response = await fetch("http://localhost:8080/api/v1/bookings/"+id, {
+                method: 'DELETE',
+                headers: {'Authorization': user.key}
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    setError(401);
+                    setIdDeleted(false);
+                    return;
+                }
+                setError('Произошла системная ошибка');
+                setIdDeleted(false);
+                return;
+            }
+            setIdDeleted(true);
+            setBookings(bookings.filter(book => book.id !== id));
+        } catch (err) {
+            setError('Произошла системная ошибка');
+            setIdDeleted(false);
+        } 
+    }
+
+    return (
+        <>
+        <button className={"form-button"} onClick={logout} style={{right: '20px', top:'20px', position: 'absolute'}}>Выйти</button>
+
+        {error && error !== 401 && <div className={'modal error'}>Ошибка<br/>{error}</div>}
+        {error === 401 && <div className={'modal error'}>
+            Ваша сессия истекла<br/>Пожалуйста, <span onClick={handleLogout} className={"text-link"}>авторизуйтесь</span> заново</div>}
+
+        <div id="main-container">
+            <span className={'text-path'} onClick={() => navigate('..')}>Главная</span> 
+            <span className={'text-path'}>/</span> 
+            <span className={'text-path'} onClick={() => navigate('/my-bookings')}>Мои записи</span>
+
+            {isLoadingBookings && <img src={'/3-dots-loader.svg'} alt={'Загрузка'} className="loader-dots"/>}
+
+            <div id={'big-modal'} style={{minHeight: '200px'}}>
+                <h1>Мои записи</h1>
+                <p>В таблице ниже представлены все актуальные брони. Нажав на название аудитории, можно перейти к её описанию. 
+                    Если таблица пуста, значит еще нет новых записей.</p>
+                <table>
+                    <thead>
+                        <tr>
+                        <th scope="col">ID</th>
+                        <th scope="col">Аудитория</th>
+                        <th scope="col">Дата брони</th>
+                        <th scope="col">Время начала</th>
+                        <th scope="col">Время конца</th>
+                        <th scope="col">Кнопка отмены</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {bookings && bookings.map((book) => (
+                            !dayjs(book.booking_date, 'DD.MM.YYYY').isBefore(dayjs(), 'day') ? (
+                                <tr>
+                                    <th scope="row">{book.id}</th>
+                                    <td><Link to={'../rooms/'+book.room.id} className={'text-link'}>{book.room.name}</Link></td>
+                                    <td>{book.booking_date}</td>
+                                    <td>{book.booking_start}</td>
+                                    <td>{book.booking_end}</td>
+                                    <td><button className={'cancel-button'} onClick={() => handleCancel(book.id)}>❌</button></td>
+                                </tr>
+                            ) : null
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        </>
+    );
 
 }
