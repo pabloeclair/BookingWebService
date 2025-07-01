@@ -1,3 +1,0 @@
-package main
-
-//go:generate protoc --go_out=. --go-grpc_out=. -I ../api auth.proto
