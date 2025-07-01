@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Получение информации о пользователе по JWT
@@ -176,7 +178,7 @@ func UpdatePassword(w http.ResponseWriter, req *http.Request) {
 	if err := models.JsonToStruct(&user, req.Body); err != nil {
 		errDto := models.NewExceptionDto(
 			http.StatusBadRequest,
-			fmt.Sprintf("%s, допустимые поля: %s", models.ErrBadBody.Error(), "new_password"),
+			fmt.Sprintf("%s, допустимые поля: %s", models.ErrBadBody.Error(), "old_password, new_password"),
 		)
 		errDto.WriteException(w)
 		return
@@ -197,6 +199,30 @@ func UpdatePassword(w http.ResponseWriter, req *http.Request) {
 		errDto := models.NewExceptionDto(
 			http.StatusUnauthorized,
 			err.Error(),
+		)
+		errDto.WriteException(w)
+		return
+	}
+
+	// сравнение паролей
+	actualUser, err := db.GetUserById(ctx, claims.Id)
+	if err != nil {
+		errDto := models.NewExceptionDto(
+			http.StatusInternalServerError,
+			err.Error(),
+		)
+		if errors.Is(err, db.ErrNotFound) {
+			errDto.StatusCode = http.StatusNotFound
+		}
+		errDto.WriteException(w)
+		return
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(actualUser.Password), []byte(user.OldPassword))
+	if err != nil {
+		errDto := models.NewExceptionDto(
+			http.StatusUnauthorized,
+			"пароль не совпадает",
 		)
 		errDto.WriteException(w)
 		return
