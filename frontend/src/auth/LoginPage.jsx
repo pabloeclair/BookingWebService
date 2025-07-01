@@ -94,8 +94,10 @@ function LoginForm({ setError }) {
             if (!responseParseJWT.ok) {
                 if (responseParseJWT.status === 400) {
                     setError(await responseParseJWT.json().error_message)
+                    return;
                 }
                 setError('Произошла серверная ошибка');
+                return;
             }
 
             const data = await responseParseJWT.json();
