@@ -3,6 +3,7 @@ package centraluniversity.app.booking.models.booking;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import centraluniversity.app.booking.models.rooms.RoomDbDto;
@@ -41,14 +42,17 @@ public class BookingDbDto {
 
     @Column(nullable = false)
     @JsonProperty("booking_date")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd.MM.yyyy")
     private LocalDate bookingDate;
 
     @Column(nullable = false)
     @JsonProperty("booking_start")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm")
     private LocalTime bookingStart;
 
     @Column(nullable = false)
     @JsonProperty("booking_end")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm")
     private LocalTime bookingEnd;
     
 }
