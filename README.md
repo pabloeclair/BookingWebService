@@ -79,8 +79,8 @@ BODY:
 
 EXAMPLE:
 {
-    "email": "admin@example.com",
-    "first_name": "Test",
+    	"email": "admin@example.com",
+    	"first_name": "Test",
 	"second_name": "Test",
 	"patronymic": "Test",
 	"password": "12345" 
@@ -102,7 +102,7 @@ BODY:
 
 EXAMPLE:
 {
-    "email": "admin@example.com",
+    	"email": "admin@example.com",
 	"password": "12345" 
 }
 
@@ -123,7 +123,7 @@ BODY: NONE
 RESULT:
 [200 OK]
 {
-    "id": 1,
+    	"id": 1,
 	"email": "admin@example.com",
 	"first_name": "Test",
 	"second_name": "Test",
@@ -146,8 +146,8 @@ BODY:
 
 EXAMPLE:
 {
-    "email": "newadmin@example.com",
-    "first_name": "newTest",
+    	"email": "newadmin@example.com",
+    	"first_name": "newTest",
 	"second_name": "newTest",
 	"patronymic": "newTest",
 }
@@ -180,7 +180,7 @@ BODY:
 EXAMPLE:
 {
 	"old_password": "12345",
-    "new_password": "1234567890"
+    	"new_password": "1234567890"
 }
 
 RESULT:
