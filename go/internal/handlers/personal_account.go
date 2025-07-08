@@ -32,10 +32,7 @@ func GetUserByJWT(w http.ResponseWriter, req *http.Request) {
 
 	token, err := utils.ParseJWT(tokenString)
 	if err != nil {
-		errDto := models.NewExceptionDto(
-			http.StatusInternalServerError,
-			err.Error(),
-		)
+		errDto := models.NewExceptionDto500()
 		if !errors.Is(err, utils.ErrNotFoundSecretKey) {
 			errDto.StatusCode = http.StatusUnauthorized
 		}
@@ -45,10 +42,7 @@ func GetUserByJWT(w http.ResponseWriter, req *http.Request) {
 
 	tokenJson, err := models.StructToJson(&token)
 	if err != nil {
-		errDto := models.NewExceptionDto(
-			http.StatusInternalServerError,
-			err.Error(),
-		)
+		errDto := models.NewExceptionDto500()
 		errDto.WriteException(w)
 		return
 	}
@@ -119,10 +113,8 @@ func UpdateUser(w http.ResponseWriter, req *http.Request) {
 
 	// обновление пользователя в бд
 	if err := db.UpdateUser(ctx, &userDb); err != nil {
-		errDto := models.NewExceptionDto(
-			http.StatusInternalServerError,
-			err.Error(),
-		)
+		errDto := models.NewExceptionDto500()
+		errDto.ErrorMessage = err.Error()
 		if errors.Is(err, db.ErrConflict) {
 			errDto.StatusCode = http.StatusConflict
 		}
@@ -136,10 +128,8 @@ func UpdateUser(w http.ResponseWriter, req *http.Request) {
 	// генерация jwt токена и отправление ответа
 	newToken, err := utils.GenerateJWT(ctx, userDb.Email)
 	if err != nil {
-		errDto := models.NewExceptionDto(
-			http.StatusInternalServerError,
-			err.Error(),
-		)
+		errDto := models.NewExceptionDto500()
+		errDto.ErrorMessage = err.Error()
 		if errors.Is(err, db.ErrNotFound) {
 			errDto.StatusCode = http.StatusNotFound
 		}
@@ -207,10 +197,8 @@ func UpdatePassword(w http.ResponseWriter, req *http.Request) {
 	// сравнение паролей
 	actualUser, err := db.GetUserById(ctx, claims.Id)
 	if err != nil {
-		errDto := models.NewExceptionDto(
-			http.StatusInternalServerError,
-			err.Error(),
-		)
+		errDto := models.NewExceptionDto500()
+		errDto.ErrorMessage = err.Error()
 		if errors.Is(err, db.ErrNotFound) {
 			errDto.StatusCode = http.StatusNotFound
 		}
@@ -230,10 +218,8 @@ func UpdatePassword(w http.ResponseWriter, req *http.Request) {
 
 	// сохранение нового пароля в бд и отправление ответа
 	if err := db.UpdatePassword(ctx, claims.Id, user.NewPassword); err != nil {
-		errDto := models.NewExceptionDto(
-			http.StatusInternalServerError,
-			err.Error(),
-		)
+		errDto := models.NewExceptionDto500()
+		errDto.ErrorMessage = err.Error()
 		if errors.Is(err, db.ErrNotFound) {
 			errDto.StatusCode = http.StatusNotFound
 		}
@@ -279,10 +265,8 @@ func DeleteUser(w http.ResponseWriter, req *http.Request) {
 
 	id := claims.Id
 	if err := db.DeleteUser(ctx, id); err != nil {
-		errDto := models.NewExceptionDto(
-			http.StatusInternalServerError,
-			err.Error(),
-		)
+		errDto := models.NewExceptionDto500()
+		errDto.ErrorMessage = err.Error()
 		if errors.Is(err, db.ErrNotFound) {
 			errDto.StatusCode = http.StatusNotFound
 		}

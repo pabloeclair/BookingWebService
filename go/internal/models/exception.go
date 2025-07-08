@@ -28,6 +28,14 @@ func NewExceptionDto(statusCode int, errorMessage string) ExceptionDto {
 	}
 }
 
+// Конструктор ExceptionDto с ошибкой 500 по умолчанию
+func NewExceptionDto500() ExceptionDto {
+	return NewExceptionDto(
+		http.StatusInternalServerError,
+		"произошла серверная ошибка",
+	)
+}
+
 // Возвращение ошибки в виде ответа на запрос и установка HTTP статуса
 func (errDto *ExceptionDto) WriteException(w http.ResponseWriter) {
 	res, err := StructToJson(errDto)
