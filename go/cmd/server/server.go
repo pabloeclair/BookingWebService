@@ -6,6 +6,7 @@ import (
 	"cu_coworking_book/go/internal/handlers"
 	"cu_coworking_book/go/internal/utils"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -28,14 +29,34 @@ func main() {
 
 	// проверка перменных окружения
 	godotenv.Load()
+
+	var errResult error
 	secretKey := os.Getenv("JWT_SECRET_KEY")
 	if secretKey == "" {
-		log.Fatal("ошибка запуска: необходимо указать значение окружения JWT_SECRET_KEY для генерации JWT-токенов")
+		errResult = errors.Join(errResult, fmt.Errorf("ошибка запуска: ошибка окружения: %w", utils.ErrNotFoundSecretKey))
 	}
-	durationUser := os.Getenv("JWT_USER_DURATION")
-	utils.CheckEnvJWTDuration(durationUser, false)
-	durationAdmin := os.Getenv("JWT_ADMIN_DURATION")
-	utils.CheckEnvJWTDuration(durationAdmin, true)
+
+	if _, err := utils.CheckEnvUserJWTDuration(); err != nil {
+		if errors.Is(err, utils.ErrNotFoundJWTDuration) {
+			log.Printf("ПРЕДУПРЕЖДЕНИЕ: %v", err)
+		} else {
+			errResult = errors.Join(errResult, fmt.Errorf("ошибка запуска: %w", err))
+		}
+	}
+
+	if _, err := utils.CheckEnvAdminJWTDuration(); err != nil {
+		if errors.Is(err, utils.ErrNotFoundJWTDuration) {
+			log.Printf("ПРЕДУПРЕЖДЕНИЕ: %v", err)
+		} else {
+			errResult = errors.Join(errResult, fmt.Errorf("ошибка запуска: %w", err))
+		}
+	}
+
+	if errResult != nil {
+		log.Println("фатальные ошибки:")
+		fmt.Println(errResult)
+		return
+	}
 
 	// timeout поднятия бд
 	<-time.After(time.Second * 3)

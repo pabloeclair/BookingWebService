@@ -6,7 +6,6 @@ import (
 	"cu_coworking_book/go/internal/models"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"time"
@@ -14,13 +13,20 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-var ErrNotFoundSecretKey error = errors.New("отсутствует secret key")
+var (
+	DefaultUserJWTDuration  int   = 60
+	DefaultAdminJWTDuration int   = 60
+	ErrNotFoundSecretKey    error = errors.New("отсутствует секретный ключ для JWT")
+	ErrNotFoundJWTDuration  error = errors.New("пропущено значение времени действия токена")
+	ErrInvalidJWTDuration   error = errors.New("значение времени действия токена некорректно; должно быть целым числом")
+	ErrInvalidRole          error = errors.New("неизвестная роль пользователя")
+)
 
 // Генерирует JWT-токен указанному пользователю
 func GenerateJWT(ctx context.Context, email string) (string, error) {
 	secretKey := []byte(os.Getenv("JWT_SECRET_KEY"))
 	if secretKey == nil {
-		log.Fatal("значение переменной JWT_SECRET_KEY обязана быть указанной")
+		return "", fmt.Errorf("ошибка окружения: %w", ErrNotFoundSecretKey)
 	}
 
 	res, err := db.GetUserByEmail(ctx, email)
@@ -28,8 +34,20 @@ func GenerateJWT(ctx context.Context, email string) (string, error) {
 		return "", err
 	}
 
-	durationStr := os.Getenv("JWT_USER_DURATION")
-	durationInt := CheckEnvJWTDuration(durationStr, false)
+	var durationInt int
+	if res.Role == models.Role_USER.String() {
+		if durationInt, err = CheckEnvUserJWTDuration(); err != nil && !errors.Is(err, ErrNotFoundJWTDuration) {
+			return "", err
+		}
+	} else if res.Role == models.Role_ADMIN.String() || res.Role == models.Role_MAIN_ADMIN.String() {
+		if durationInt, err = CheckEnvAdminJWTDuration(); err != nil && !errors.Is(err, ErrNotFoundJWTDuration) {
+			return "", err
+		}
+	} else {
+		return "", fmt.Errorf(
+			"jwt error: %w; при попытке сгенерировать JWT для пользователя с email %s",
+			ErrInvalidRole, email)
+	}
 
 	userClaim := models.UserClaim{
 		Id:         res.Id,
@@ -68,24 +86,34 @@ func ParseJWT(tokenString string) (*models.UserClaim, error) {
 
 // Проверяет наличие и корректность переменных окружения, указывающих продолжительность
 // JWT-токенов и в случае успеха возвращает указанное число или число по умолчанию (60) при отсутствии
-func CheckEnvJWTDuration(duration string, isAdmin bool) int {
-	var user string
-	if isAdmin {
-		user = "ADMIN"
-	} else {
-		user = "USER"
-	}
+func CheckEnvUserJWTDuration() (int, error) {
+	duration := os.Getenv("JWT_USER_DURATION")
 
 	if duration == "" {
-		log.Println("ПРЕДУПРЕЖДЕНИЕ: в переменной окружения JWT_" + user + "_DURATION, которая указывает на " +
-			"продолжительность в минутах сохранения JWT-токенов, было пропущено значение, в следствии чего будет " +
-			"использоваться значение по умолчанию - 60 минут")
-		return 60
+		return DefaultUserJWTDuration, fmt.Errorf(
+			"ошибка окружения: в JWT_USER_DURATION %w, из-за чего использовано значение по умолчанию – %d",
+			ErrNotFoundJWTDuration, DefaultUserJWTDuration)
 	} else {
 		durationInt, err := strconv.Atoi(duration)
 		if err != nil {
-			log.Fatalf("ошибка окружения: необходимо указывать значение JWT_" + user + "_DURATION в формате int (в минутах)")
+			return 0, fmt.Errorf("ошибка окружения: %w", ErrInvalidJWTDuration)
 		}
-		return durationInt
+		return durationInt, nil
+	}
+}
+
+func CheckEnvAdminJWTDuration() (int, error) {
+	duration := os.Getenv("JWT_ADMIN_DURATION")
+
+	if duration == "" {
+		return DefaultAdminJWTDuration, fmt.Errorf(
+			"ошибка окружения: в JWT_ADMIN_DURATION %w, из-за чего использовано значение по умолчанию – %d",
+			ErrNotFoundJWTDuration, DefaultUserJWTDuration)
+	} else {
+		durationInt, err := strconv.Atoi(duration)
+		if err != nil {
+			return 0, fmt.Errorf("ошибка окружения: %w", ErrInvalidJWTDuration)
+		}
+		return durationInt, nil
 	}
 }
