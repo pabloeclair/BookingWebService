@@ -1,5 +1,5 @@
 .env
 .vscode
 .idea
-/go/internal/pb/
-server
+/bin
+*.mp4
