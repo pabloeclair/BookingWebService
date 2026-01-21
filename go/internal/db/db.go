@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -18,6 +17,7 @@ var (
 	ErrConflict error = errors.New("произошел конфликт данных")
 	ErrNotFound error = errors.New("по запросу ничего не было найдено")
 	ErrBadKey   error = errors.New("передан некорректный ключ")
+	DSN         string
 )
 
 // Структура пользователя для сохранения в базе данных.
@@ -42,9 +42,12 @@ func (u *User) finallyFieldsProcessing() {
 
 // Подключение к базе данных.
 func connectToDb() (*sqlx.DB, error) {
-	db, err := sqlx.Connect("pgx", os.Getenv("DSN"))
+	if DSN == "" {
+		return nil, fmt.Errorf("connecting to db: %w: %s", ErrConDB, "отсутствует DSN")
+	}
+	db, err := sqlx.Connect("pgx", DSN)
 	if err != nil {
-		return nil, fmt.Errorf("creating user: %w: %s", ErrConDB, err.Error())
+		return nil, fmt.Errorf("connecting to db: %w: %s", ErrConDB, err.Error())
 	}
 
 	return db, nil

@@ -33,7 +33,11 @@ func main() {
 	var errResult error
 	secretKey := os.Getenv("JWT_SECRET_KEY")
 	if secretKey == "" {
-		errResult = errors.Join(errResult, fmt.Errorf("ошибка запуска: ошибка окружения: %w", utils.ErrNotFoundSecretKey))
+		errResult = errors.Join(
+			errResult,
+			fmt.Errorf("ошибка запуска: ошибка окружения: %w",
+				utils.ErrNotFoundSecretKey,
+			))
 	}
 
 	if _, err := utils.CheckEnvUserJWTDuration(); err != nil {
@@ -52,11 +56,43 @@ func main() {
 		}
 	}
 
+	psUser := os.Getenv("POSTGRES_USER")
+	if psUser == "" {
+		errResult = errors.Join(
+			errResult,
+			fmt.Errorf("ошибка запуска: ошибка окружения: %s",
+				"не найден POSTGRES_USER",
+			))
+	}
+
+	psPsswd := os.Getenv("POSTGRES_PASSWORD")
+	if psPsswd == "" {
+		errResult = errors.Join(
+			errResult,
+			fmt.Errorf("ошибка запуска: ошибка окружения: %s",
+				"не найден POSTGRES_PASSWORD",
+			))
+	}
+
+	psDatabase := os.Getenv("POSTGRES_DB")
+	if psDatabase == "" {
+		errResult = errors.Join(
+			errResult,
+			fmt.Errorf("ошибка запуска: ошибка окружения: %s",
+				"не найден POSTGRES_DB",
+			))
+	}
+
 	if errResult != nil {
 		log.Println("фатальные ошибки:")
 		fmt.Println(errResult)
 		return
 	}
+
+	db.DSN = fmt.Sprintf(
+		"postgres://%s:%s@db:5432/%s?sslmode=disable",
+		psUser, psPsswd, psDatabase,
+	)
 
 	// timeout поднятия бд
 	<-time.After(time.Second * 3)
@@ -92,7 +128,8 @@ func main() {
 		}
 	}()
 
-	<-time.After(time.Second * 1) // чтобы не выводил сообщение, если в начале прослушивания произойдет ошибка
+	<-time.After(time.Second * 1) // чтобы не выводил сообщение, 
+								  // если в начале прослушивания произойдет ошибка
 	if hasError {
 		return
 	}
