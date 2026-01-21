@@ -16,7 +16,7 @@ WORKDIR /app
 COPY /java/ . 
 RUN gradle build --no-daemon
 
-FROM openjdk:17-jdk-alpine AS web
+FROM eclipse-temurin:17-jdk-alpine AS web
 WORKDIR /app
 COPY --from=web_build /app/build/libs/*.jar app.jar
 CMD ["java", "-jar", "app.jar"]
